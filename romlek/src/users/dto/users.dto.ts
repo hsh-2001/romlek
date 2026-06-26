@@ -7,7 +7,3 @@ export interface UserRow {
   created_at: Date | null;
   modified_at: Date | null;
 }
-
-export type CreateUserDto = Omit<UserRow, 'id' | 'created_at' | 'modified_at'>;
-
-export type UserLoginDto = Pick<UserRow, 'username' | 'password'>;

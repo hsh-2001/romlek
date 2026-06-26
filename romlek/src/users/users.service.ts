@@ -1,18 +1,21 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { UsersRepository } from './users.repository';
-import { CreateUserDto, UserLoginDto, UserRow } from './dto/users.dto';
+import { UserRow } from './dto/users.dto';
 import bcrypt from 'bcryptjs';
 import jwtConfig from '../common/utils/jwt-config.util';
+import { LoginDtoClass } from './dto/login.dto';
+import { CreateUserDtoClass } from './dto/create-user.dto';
+import { IUserService } from './interfaces/user.interface';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements IUserService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async getUser() {
     return this.usersRepository.getUser();
   }
 
-  async createUser(user: CreateUserDto): Promise<UserRow> {
+  async createUser(user: CreateUserDtoClass): Promise<UserRow> {
     const existingUser = await this.findUserUsernameOrEmail(
       user.username,
       user.email || '',
@@ -28,7 +31,7 @@ export class UsersService {
   }
 
   async handleLogin(
-    user: UserLoginDto,
+    user: LoginDtoClass,
   ): Promise<(Omit<UserRow, 'password'> & { token: string }) | null> {
     const foundUser = await this.findUserUsernameOrEmail(
       user.username,

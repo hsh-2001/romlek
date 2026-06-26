@@ -3,7 +3,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreateUserDto, UserRow } from './dto/users.dto';
+import { UserRow } from './dto/users.dto';
+import { CreateUserDtoClass } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersRepository {
@@ -19,7 +20,7 @@ export class UsersRepository {
     return result?.rows ?? [];
   }
 
-  async createUser(user: CreateUserDto): Promise<UserRow> {
+  async createUser(user: CreateUserDtoClass): Promise<UserRow> {
     const result = await this.databaseService.query<UserRow>(
       `
       INSERT INTO users (username, password, email, phone)
