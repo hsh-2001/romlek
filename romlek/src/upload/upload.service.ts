@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { Express } from 'express';
 import { CreateUploadDto } from './dto/create-upload.dto';
-import { UpdateUploadDto } from './dto/update-upload.dto';
 import { UploadHlsService } from './upload-hls.service';
 import { UploadRepository } from './upload.repository';
 import { UploadStorageService } from './upload-storage.service';
@@ -14,6 +13,8 @@ import {
   generateFilename,
   getExtension,
   getFileUrl,
+  getHlsPlaylistUrl,
+  isVideo,
   normalizeUploadPath,
   parseBoolean,
 } from './upload.utils';
@@ -124,23 +125,12 @@ export class UploadService {
     return this.hls.createVariantForKey(key);
   }
 
-  create(createUploadDto: CreateUploadDto) {
-    return this.uploadRepository.create(createUploadDto);
-  }
-
-  findAll() {
-    return this.uploadRepository.findAll();
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} upload`;
-  }
-
-  update(id: number, _updateUploadDto: UpdateUploadDto) {
-    return `This action updates a #${id} upload`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} upload`;
+  async findAll() {
+    const uploads = await this.uploadRepository.findAll();
+    return uploads.map((upload) =>
+      isVideo(upload.mime_type, upload.original_name || upload.file_name)
+        ? { ...upload, hls_url: getHlsPlaylistUrl(upload.file_path) }
+        : upload,
+    );
   }
 }

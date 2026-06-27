@@ -24,7 +24,7 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
       ([entry]) => {
         setShouldRenderVideo(entry.isIntersecting);
       },
-      { rootMargin: '160px 0px', threshold: 0.01 },
+      { rootMargin: '0px', threshold: 0.01 },
     );
 
     observer.observe(container);
@@ -37,21 +37,32 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
       return undefined;
     }
 
+    const playVideo = () => {
+      void video.play().catch(() => {
+        // Browsers may still block autoplay in some modes; controls remain visible.
+      });
+    };
     const fallbackToMp4 = () => {
       if (video.src !== src) {
         video.src = src;
       }
+      video.addEventListener('loadedmetadata', playVideo, { once: true });
     };
 
     if (!hlsSrc) {
       fallbackToMp4();
-      return undefined;
+      return () => video.removeEventListener('loadedmetadata', playVideo);
     }
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsSrc;
+      video.addEventListener('loadedmetadata', playVideo, { once: true });
       video.addEventListener('error', fallbackToMp4, { once: true });
-      return () => video.removeEventListener('error', fallbackToMp4);
+      return () => {
+        video.pause();
+        video.removeEventListener('loadedmetadata', playVideo);
+        video.removeEventListener('error', fallbackToMp4);
+      };
     }
 
     let isMounted = true;
@@ -76,6 +87,7 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
 
       hls.loadSource(hlsSrc);
       hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, playVideo);
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           hls?.destroy();
@@ -87,6 +99,7 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
 
     return () => {
       isMounted = false;
+      video.pause();
       hls?.destroy();
     };
   }, [hlsSrc, shouldRenderVideo, src]);
@@ -94,7 +107,16 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
   return (
     <div ref={containerRef} className="hls-video-shell">
       {shouldRenderVideo ? (
-        <video ref={videoRef} poster={poster} controls preload="metadata" playsInline />
+        <video
+          ref={videoRef}
+          poster={poster}
+          autoPlay
+          controls
+          loop
+          muted
+          preload="metadata"
+          playsInline
+        />
       ) : poster ? (
         <img src={poster} alt="" loading="lazy" decoding="async" />
       ) : null}

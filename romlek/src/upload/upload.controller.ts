@@ -3,36 +3,29 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  Headers,
   Head,
   UseInterceptors,
   UploadedFiles,
   Query,
   Res,
-  StreamableFile,
 } from '@nestjs/common';
-import { UploadService } from './upload.service';
-import { CreateUploadDto } from './dto/create-upload.dto';
-import { UpdateUploadDto } from './dto/update-upload.dto';
 import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import { UploadService } from './upload.service';
 
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  @Post()
-  @ApiBody({ type: CreateUploadDto })
-  create(@Body() createUploadDto: CreateUploadDto) {
-    return this.uploadService.create(createUploadDto);
+  @Get()
+  @ApiOperation({ summary: 'List uploaded media' })
+  findAll() {
+    return this.uploadService.findAll();
   }
 
-  @Post('upload')
-  @ApiOperation({ summary: 'Upload files' })
+  @Post()
+  @ApiOperation({ summary: 'Upload files and create HLS for videos' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -45,17 +38,21 @@ export class UploadController {
             format: 'binary',
           },
         },
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
         path: {
           type: 'string',
-          description: 'Optional path to upload files to',
+          description: 'Optional R2 folder path.',
         },
         uploaded_by: {
           type: 'string',
-          description: 'Optional user id of the uploader',
+          description: 'Optional user id of the uploader.',
         },
         is_public: {
           type: 'boolean',
-          description: 'Whether uploaded files should be public',
+          description: 'Whether uploaded files should be public.',
         },
       },
     },
@@ -66,7 +63,7 @@ export class UploadController {
       { name: 'file', maxCount: 1 },
     ]),
   )
-  uploadFile(
+  uploadFiles(
     @UploadedFiles()
     uploadedFiles: {
       files?: Express.Multer.File[];
@@ -80,52 +77,29 @@ export class UploadController {
       ...(uploadedFiles.files ?? []),
       ...(uploadedFiles.file ?? []),
     ];
+
     return this.uploadService.upload(files, path, {
       uploadedBy,
       isPublic,
     });
   }
 
-  @Get()
-  findAll() {
-    return this.uploadService.findAll();
-  }
-
   @Head('render')
-  @ApiOperation({ summary: 'Read uploaded file metadata' })
-  async headFile(
+  @ApiOperation({ summary: 'Resolve uploaded media render URL' })
+  async headRender(
     @Query('key') key: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
-    response.setHeader('Cache-Control', 'no-store');
-    response.redirect(302, signedUrl);
-    return undefined;
+    return this.redirectToSignedRenderUrl(key, response);
   }
 
   @Get('render')
-  @ApiOperation({ summary: 'Render uploaded file' })
-  async renderFile(
+  @ApiOperation({ summary: 'Render uploaded media' })
+  async render(
     @Query('key') key: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
-    response.setHeader('Cache-Control', 'no-store');
-    response.redirect(302, signedUrl);
-  }
-
-  @Get('stream')
-  @ApiOperation({ summary: 'Stream uploaded file through API' })
-  async streamFile(
-    @Query('key') key: string,
-    @Headers('range') range: string | undefined,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const file = await this.uploadService.getFile(key, range);
-
-    this.setMediaHeaders(response, file);
-
-    return new StreamableFile(file.body);
+    return this.redirectToSignedRenderUrl(key, response);
   }
 
   @Get('hls/playlist')
@@ -156,59 +130,15 @@ export class UploadController {
   }
 
   @Post('hls/transcode')
-  @ApiOperation({ summary: 'Create HLS variant for an uploaded video' })
+  @ApiOperation({ summary: 'Create HLS for an existing uploaded video' })
   createHlsVariant(@Query('key') key: string) {
     return this.uploadService.createHlsForKey(key);
   }
 
-  private setMediaHeaders(
-    response: Response,
-    file: {
-      statusCode: number;
-      contentType: string;
-      contentLength?: number;
-      contentRange?: string;
-      etag?: string;
-      lastModified?: Date;
-      filename: string;
-    },
-  ) {
-    response.status(file.statusCode);
-    response.setHeader('Content-Type', file.contentType);
-    response.setHeader('Accept-Ranges', 'bytes');
-    response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    response.setHeader('Vary', 'Range');
-    response.setHeader('X-Content-Type-Options', 'nosniff');
-    if (file.contentLength !== undefined) {
-      response.setHeader('Content-Length', file.contentLength.toString());
-    }
-    if (file.contentRange) {
-      response.setHeader('Content-Range', file.contentRange);
-    }
-    if (file.etag) {
-      response.setHeader('ETag', file.etag);
-    }
-    if (file.lastModified) {
-      response.setHeader('Last-Modified', file.lastModified.toUTCString());
-    }
-    response.setHeader(
-      'Content-Disposition',
-      `inline; filename="${file.filename}"`,
-    );
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.uploadService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUploadDto: UpdateUploadDto) {
-    return this.uploadService.update(+id, updateUploadDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.uploadService.remove(+id);
+  private async redirectToSignedRenderUrl(key: string, response: Response) {
+    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
+    response.setHeader('Cache-Control', 'no-store');
+    response.redirect(302, signedUrl);
+    return undefined;
   }
 }
