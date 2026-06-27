@@ -13,14 +13,28 @@ import {
 } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import { Express } from 'express';
+import { extname } from 'path';
 import { Readable } from 'stream';
+import { UploadRepository } from './upload.repository';
+
+type WebStreamBody = {
+  transformToWebStream: () => Parameters<typeof Readable.fromWeb>[0];
+};
+
+type UploadOptions = {
+  uploadedBy?: string;
+  isPublic?: string | boolean;
+};
 
 @Injectable()
 export class UploadService {
   private readonly client: S3Client;
   private readonly bucket: string;
 
-  constructor(private config: ConfigService) {
+  constructor(
+    private config: ConfigService,
+    private readonly uploadRepository: UploadRepository,
+  ) {
     const endpoint = this.getRequiredConfig('CF_R2_API');
     const accessKeyId = this.getRequiredConfig('CF_R2_ACCESS_KEY');
     const secretAccessKey = this.getRequiredConfig('CF_R2_SECRET_KEY');
@@ -50,14 +64,20 @@ export class UploadService {
     return value;
   }
 
-  async upload(files?: Express.Multer.File[], path?: string) {
+  async upload(
+    files?: Express.Multer.File[],
+    path?: string,
+    options: UploadOptions = {},
+  ) {
     if (!files?.length) {
       throw new BadRequestException('No files uploaded');
     }
 
     const uploadPath = this.normalizePath(path);
     const uploadedFiles = await Promise.all(
-      files.map((file) => this.uploadOne(file, uploadPath)),
+      files.map((file) => {
+        return this.uploadOne(file, uploadPath, options);
+      }),
     );
 
     return {
@@ -84,7 +104,11 @@ export class UploadService {
     return pathSegments.join('/');
   }
 
-  private async uploadOne(file: Express.Multer.File, path: string) {
+  private async uploadOne(
+    file: Express.Multer.File,
+    path: string,
+    options: UploadOptions,
+  ) {
     const filename = file.originalname?.trim();
     if (!filename) {
       throw new BadRequestException('Uploaded file must have a filename');
@@ -101,6 +125,24 @@ export class UploadService {
         ContentType: file.mimetype,
       });
       await this.client.send(command);
+      const media = await this.uploadRepository.create(
+        new CreateUploadDto({
+          file_name: generatedFilename,
+          original_name: filename,
+          file_path: key,
+          file_url: this.getFileUrl(key),
+          mime_type: file.mimetype,
+          extension: this.getExtension(filename),
+          file_size: file.size,
+          width: null,
+          height: null,
+          duration: null,
+          storage_provider: 'r2',
+          uploaded_by: options.uploadedBy?.trim() || null,
+          is_public: this.parseBoolean(options.isPublic),
+        }),
+      );
+
       return {
         originalFilename: filename,
         filename: generatedFilename,
@@ -108,6 +150,7 @@ export class UploadService {
         key,
         contentType: file.mimetype,
         size: file.size,
+        media,
       };
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -119,6 +162,22 @@ export class UploadService {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const safeFilename = filename.replace(/[/\\]/g, '').replace(/\s+/g, '-');
     return `${timestamp}-${safeFilename}`;
+  }
+
+  private getExtension(filename: string) {
+    return extname(filename).replace('.', '').toLowerCase() || null;
+  }
+
+  private getFileUrl(key: string) {
+    return `/upload/render?key=${encodeURIComponent(key)}`;
+  }
+
+  private parseBoolean(value?: string | boolean) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    return value === 'true' || value === '1';
   }
 
   async getFile(key?: string) {
@@ -182,9 +241,7 @@ export class UploadService {
       'transformToWebStream' in body &&
       typeof body.transformToWebStream === 'function'
     ) {
-      const webStream = body.transformToWebStream() as Parameters<
-        typeof Readable.fromWeb
-      >[0];
+      const webStream = (body as WebStreamBody).transformToWebStream();
       return Readable.fromWeb(webStream);
     }
 
@@ -195,8 +252,8 @@ export class UploadService {
     throw new InternalServerErrorException('File body is not readable');
   }
 
-  create(createUploadDto: CreateUploadDto) {
-    return 'This action adds a new upload';
+  async create(createUploadDto: CreateUploadDto) {
+    return this.uploadRepository.create(createUploadDto);
   }
 
   findAll() {
@@ -207,7 +264,7 @@ export class UploadService {
     return `This action returns a #${id} upload`;
   }
 
-  update(id: number, updateUploadDto: UpdateUploadDto) {
+  update(id: number, _updateUploadDto: UpdateUploadDto) {
     return `This action updates a #${id} upload`;
   }
 

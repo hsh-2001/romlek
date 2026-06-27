@@ -54,7 +54,7 @@ export class UsersService implements IUserService {
     }
 
     const token = await jwtConfig.generateToken(foundUser);
-    const { password, ...userWithoutPassword } = foundUser;
+    const { password: _password, ...userWithoutPassword } = foundUser;
     return { ...userWithoutPassword, token };
   }
 

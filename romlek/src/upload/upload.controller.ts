@@ -24,6 +24,7 @@ export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post()
+  @ApiBody({ type: CreateUploadDto })
   create(@Body() createUploadDto: CreateUploadDto) {
     return this.uploadService.create(createUploadDto);
   }
@@ -46,6 +47,14 @@ export class UploadController {
           type: 'string',
           description: 'Optional path to upload files to',
         },
+        uploaded_by: {
+          type: 'string',
+          description: 'Optional user id of the uploader',
+        },
+        is_public: {
+          type: 'boolean',
+          description: 'Whether uploaded files should be public',
+        },
       },
     },
   })
@@ -62,12 +71,17 @@ export class UploadController {
       file?: Express.Multer.File[];
     },
     @Body('path') path?: string,
+    @Body('uploaded_by') uploadedBy?: string,
+    @Body('is_public') isPublic?: string | boolean,
   ) {
     const files = [
       ...(uploadedFiles.files ?? []),
       ...(uploadedFiles.file ?? []),
     ];
-    return this.uploadService.upload(files, path);
+    return this.uploadService.upload(files, path, {
+      uploadedBy,
+      isPublic,
+    });
   }
 
   @Get()
