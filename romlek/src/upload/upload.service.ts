@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -8,6 +10,7 @@ import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -25,6 +28,23 @@ type UploadOptions = {
   uploadedBy?: string;
   isPublic?: string | boolean;
 };
+
+type RenderedFile = {
+  body: Readable;
+  filename: string;
+  contentType: string;
+  contentLength?: number;
+  contentRange?: string;
+  statusCode: number;
+};
+
+type ByteRange = {
+  start?: number;
+  end?: number;
+  suffixLength?: number;
+};
+
+const MAX_RENDER_CHUNK_SIZE = 8 * 1024 * 1024;
 
 @Injectable()
 export class UploadService {
@@ -180,14 +200,31 @@ export class UploadService {
     return value === 'true' || value === '1';
   }
 
-  async getFile(key?: string) {
+  async getFile(key?: string, range?: string): Promise<RenderedFile> {
     const objectKey = this.normalizeObjectKey(key);
+    const requestedRange = this.normalizeRange(range);
 
     try {
+      const metadata = requestedRange
+        ? await this.client.send(
+            new HeadObjectCommand({
+              Bucket: this.bucket,
+              Key: objectKey,
+            }),
+          )
+        : null;
+      const totalSize = metadata?.ContentLength;
+      const resolvedRange =
+        requestedRange && totalSize !== undefined
+          ? this.resolveRange(requestedRange, totalSize)
+          : null;
       const object = await this.client.send(
         new GetObjectCommand({
           Bucket: this.bucket,
           Key: objectKey,
+          Range: resolvedRange
+            ? `bytes=${resolvedRange.start}-${resolvedRange.end}`
+            : undefined,
         }),
       );
 
@@ -199,7 +236,18 @@ export class UploadService {
         body: this.toReadable(object.Body),
         filename: objectKey.split('/').pop() ?? objectKey,
         contentType: object.ContentType ?? 'application/octet-stream',
-        contentLength: object.ContentLength,
+        contentLength:
+          resolvedRange && totalSize !== undefined
+            ? resolvedRange.end - resolvedRange.start + 1
+            : object.ContentLength,
+        contentRange:
+          resolvedRange && totalSize !== undefined
+            ? `bytes ${resolvedRange.start}-${resolvedRange.end}/${totalSize}`
+            : object.ContentRange,
+        statusCode:
+          resolvedRange || object.ContentRange
+            ? HttpStatus.PARTIAL_CONTENT
+            : HttpStatus.OK,
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -209,6 +257,13 @@ export class UploadService {
       const errorName = error instanceof Error ? error.name : undefined;
       if (errorName === 'NoSuchKey' || errorName === 'NotFound') {
         throw new NotFoundException('File not found');
+      }
+
+      if (errorName === 'InvalidRange') {
+        throw new HttpException(
+          'Requested range is not satisfiable',
+          HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+        );
       }
 
       console.error('Error rendering file:', error);
@@ -228,6 +283,77 @@ export class UploadService {
     }
 
     return keySegments.join('/');
+  }
+
+  private normalizeRange(range?: string): ByteRange | undefined {
+    const value = range?.trim();
+    if (!value) {
+      return undefined;
+    }
+
+    const match = /^bytes=(\d*)-(\d*)$/.exec(value);
+    if (!match || value === 'bytes=-') {
+      throw new BadRequestException('Invalid range header');
+    }
+
+    const [, startValue, endValue] = match;
+    const start = startValue ? Number(startValue) : undefined;
+    const end = endValue ? Number(endValue) : undefined;
+
+    if (
+      (start !== undefined && !Number.isSafeInteger(start)) ||
+      (end !== undefined && !Number.isSafeInteger(end))
+    ) {
+      throw new BadRequestException('Invalid range header');
+    }
+
+    if (start === undefined && end !== undefined) {
+      return { suffixLength: end };
+    }
+
+    return { start, end };
+  }
+
+  private resolveRange(range: ByteRange, totalSize: number) {
+    if (!Number.isSafeInteger(totalSize) || totalSize <= 0) {
+      throw new HttpException(
+        'Requested range is not satisfiable',
+        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+      );
+    }
+
+    if (range.suffixLength !== undefined) {
+      if (range.suffixLength <= 0) {
+        throw new BadRequestException('Invalid range header');
+      }
+
+      const length = Math.min(range.suffixLength, totalSize);
+      return {
+        start: totalSize - length,
+        end: totalSize - 1,
+      };
+    }
+
+    const start = range.start ?? 0;
+    if (start >= totalSize) {
+      throw new HttpException(
+        'Requested range is not satisfiable',
+        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+      );
+    }
+
+    const requestedEnd = range.end ?? totalSize - 1;
+    if (requestedEnd < start) {
+      throw new BadRequestException('Invalid range header');
+    }
+
+    const boundedEnd = Math.min(
+      requestedEnd,
+      totalSize - 1,
+      start + MAX_RENDER_CHUNK_SIZE - 1,
+    );
+
+    return { start, end: boundedEnd };
   }
 
   private toReadable(body: unknown) {
@@ -257,7 +383,7 @@ export class UploadService {
   }
 
   findAll() {
-    return `This action returns all upload`;
+    return this.uploadRepository.findAll();
   }
 
   findOne(id: number) {

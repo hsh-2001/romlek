@@ -5,6 +5,40 @@ import { DatabaseService } from '../database/database.service';
 @Injectable()
 export class UploadRepository {
   constructor(private readonly databaseService: DatabaseService) {}
+
+  async findAll() {
+    try {
+      const result = await this.databaseService.query<CreateUploadDto>(
+        `
+      SELECT
+        id,
+        file_name,
+        original_name,
+        file_path,
+        file_url,
+        mime_type,
+        extension,
+        file_size,
+        width,
+        height,
+        duration,
+        storage_provider,
+        uploaded_by,
+        is_public,
+        created_at,
+        updated_at
+      FROM media
+      ORDER BY created_at DESC, id DESC
+    `,
+      );
+
+      return result.rows;
+    } catch (error) {
+      console.error('Error finding uploads:', error);
+      throw error;
+    }
+  }
+
   async create(createUploadDto: CreateUploadDto) {
     try {
       const result = await this.databaseService.query<CreateUploadDto>(

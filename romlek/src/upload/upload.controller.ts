@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Headers,
   UseInterceptors,
   UploadedFiles,
   Query,
@@ -93,13 +94,19 @@ export class UploadController {
   @ApiOperation({ summary: 'Render uploaded file' })
   async renderFile(
     @Query('key') key: string,
+    @Headers('range') range: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.uploadService.getFile(key);
+    const file = await this.uploadService.getFile(key, range);
 
+    response.status(file.statusCode);
     response.setHeader('Content-Type', file.contentType);
-    if (file.contentLength) {
+    response.setHeader('Accept-Ranges', 'bytes');
+    if (file.contentLength !== undefined) {
       response.setHeader('Content-Length', file.contentLength.toString());
+    }
+    if (file.contentRange) {
+      response.setHeader('Content-Range', file.contentRange);
     }
     response.setHeader(
       'Content-Disposition',
