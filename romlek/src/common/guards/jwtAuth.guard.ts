@@ -20,14 +20,13 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Authorization header is missing');
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(' ')[1] as string;
     if (!token) {
       throw new UnauthorizedException('Token is missing');
     }
-    console.log('Token:', token); // Log the token for debugging
     try {
       await jwtConfig.verifyToken(token);
-      return true; // Return true to allow access to the route
+      return true;
     } catch (error) {
       console.error('Token verification error:', error); // Log the error for debugging
       throw new UnauthorizedException('Invalid or expired token');
