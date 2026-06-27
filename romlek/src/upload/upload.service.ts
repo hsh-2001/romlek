@@ -14,6 +14,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 import { Express } from 'express';
 import { extname } from 'path';
@@ -35,6 +36,8 @@ type RenderedFile = {
   contentType: string;
   contentLength?: number;
   contentRange?: string;
+  etag?: string;
+  lastModified?: Date;
   statusCode: number;
 };
 
@@ -45,6 +48,7 @@ type ByteRange = {
 };
 
 const MAX_RENDER_CHUNK_SIZE = 8 * 1024 * 1024;
+const SIGNED_RENDER_URL_TTL_SECONDS = 60 * 60;
 
 @Injectable()
 export class UploadService {
@@ -244,6 +248,8 @@ export class UploadService {
           resolvedRange && totalSize !== undefined
             ? `bytes ${resolvedRange.start}-${resolvedRange.end}/${totalSize}`
             : object.ContentRange,
+        etag: object.ETag,
+        lastModified: object.LastModified,
         statusCode:
           resolvedRange || object.ContentRange
             ? HttpStatus.PARTIAL_CONTENT
@@ -269,6 +275,22 @@ export class UploadService {
       console.error('Error rendering file:', error);
       throw new InternalServerErrorException('Error rendering file');
     }
+  }
+
+  async getSignedRenderUrl(key?: string) {
+    const objectKey = this.normalizeObjectKey(key);
+    const filename = objectKey.split('/').pop() ?? objectKey;
+
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+        ResponseCacheControl: 'public, max-age=3600',
+        ResponseContentDisposition: `inline; filename="${filename.replace(/"/g, '\\"')}"`,
+      }),
+      { expiresIn: SIGNED_RENDER_URL_TTL_SECONDS },
+    );
   }
 
   private normalizeObjectKey(key?: string) {

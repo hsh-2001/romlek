@@ -15,7 +15,8 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN || '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization, Range',
-    exposedHeaders: 'Content-Length, Content-Range, Accept-Ranges',
+    exposedHeaders:
+      'Content-Length, Content-Range, Accept-Ranges, ETag, Last-Modified, Cache-Control',
   });
   app.useGlobalFilters(new AllExceptionsFilter());
   const config = new DocumentBuilder()

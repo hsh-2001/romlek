@@ -82,7 +82,7 @@ export default function FeedPage() {
                 {post.media.map((media) => (
                   <figure key={media.id} className={`feed-media-item ${media.kind}`}>
                     {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                    {media.kind === 'video' ? <video src={media.url} poster={media.poster} controls preload="metadata" playsInline /> : null}
+                    {media.kind === 'video' ? <video src={media.url} poster={media.poster} controls preload="none" playsInline /> : null}
                     {media.kind === 'file' ? (
                       <a className="feed-media-file" href={media.url} target="_blank" rel="noopener noreferrer">
                         {media.alt}

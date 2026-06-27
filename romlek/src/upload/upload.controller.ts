@@ -94,6 +94,17 @@ export class UploadController {
   @ApiOperation({ summary: 'Render uploaded file' })
   async renderFile(
     @Query('key') key: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
+    response.setHeader('Cache-Control', 'public, max-age=3600');
+    response.redirect(302, signedUrl);
+  }
+
+  @Get('stream')
+  @ApiOperation({ summary: 'Stream uploaded file through API' })
+  async streamFile(
+    @Query('key') key: string,
     @Headers('range') range: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -102,11 +113,20 @@ export class UploadController {
     response.status(file.statusCode);
     response.setHeader('Content-Type', file.contentType);
     response.setHeader('Accept-Ranges', 'bytes');
+    response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    response.setHeader('Vary', 'Range');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     if (file.contentLength !== undefined) {
       response.setHeader('Content-Length', file.contentLength.toString());
     }
     if (file.contentRange) {
       response.setHeader('Content-Range', file.contentRange);
+    }
+    if (file.etag) {
+      response.setHeader('ETag', file.etag);
+    }
+    if (file.lastModified) {
+      response.setHeader('Last-Modified', file.lastModified.toUTCString());
     }
     response.setHeader(
       'Content-Disposition',
