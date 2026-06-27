@@ -18,6 +18,7 @@ const migrationOrder = new Map([
   ['users.sql', 1],
   ['trips.sql', 2],
   ['location.sql', 3],
+  ['media.sql', 4]
 ]);
 
 async function runMigrations() {

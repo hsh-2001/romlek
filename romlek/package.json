@@ -17,11 +17,13 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migrate:db": "node  database/migrates/publish.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@nestjs/common": "^11.1.27",
-    "@nestjs/config": "^4.0.2",
+    "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.27",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
@@ -30,6 +32,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
+    "multer": "^2.2.0",
     "pg": "^8.22.0"
   },
   "devDependencies": {
@@ -40,6 +43,7 @@
     "@nestjs/testing": "^11.1.27",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.0.0",

@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { TripModule } from './trip/trip.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TripModule } from './trip/trip.module';
     DatabaseModule,
     UsersModule,
     TripModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
