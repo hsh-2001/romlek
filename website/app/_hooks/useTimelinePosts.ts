@@ -10,6 +10,7 @@ export type TimelineMedia = {
   id: string;
   kind: 'image' | 'video' | 'file';
   url: string;
+  hlsUrl?: string;
   alt: string;
   poster?: string;
 };
@@ -45,14 +46,46 @@ const getApiItems = (payload: unknown): ApiRecord[] => {
     payload.data,
     payload.posts,
     payload.items,
+    payload.files,
     payload.results,
     isRecord(payload.data) ? payload.data.posts : undefined,
     isRecord(payload.data) ? payload.data.items : undefined,
+    isRecord(payload.data) ? payload.data.files : undefined,
     isRecord(payload.data) ? payload.data.results : undefined,
   ];
 
   const list = candidates.find(Array.isArray);
   return Array.isArray(list) ? list.filter(isRecord) : [];
+};
+
+const getNestedRecord = (value: ApiRecord, key: string) => (isRecord(value[key]) ? value[key] : {});
+
+const getMediaRecord = (value: unknown): ApiRecord | null => {
+  const media = typeof value === 'string' ? { url: value } : value;
+  if (!isRecord(media)) {
+    return null;
+  }
+
+  return {
+    ...media,
+    ...getNestedRecord(media, 'media'),
+    ...getNestedRecord(media, 'file'),
+    ...getNestedRecord(media, 'upload'),
+  };
+};
+
+const getKeyFromMediaUrl = (url: string) => {
+  if (!url) {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(url, apiBaseUrl);
+    const key = parsedUrl.searchParams.get('key')?.trim();
+    return key || '';
+  } catch {
+    return '';
+  }
 };
 
 const resolveMediaUrl = (url: string) => {
@@ -75,10 +108,21 @@ const resolveMediaUrl = (url: string) => {
   return new URL(url, `${apiBaseUrl.replace(/\/$/, '')}/`).toString();
 };
 
-const inferMediaKind = (media: ApiRecord, url: string): TimelineMedia['kind'] => {
-  const mimeType = firstString(media.mime_type, media.mimeType, media.contentType, media.type).toLowerCase();
+const getExtensionFromPath = (value: string) => {
+  const path = value.split('?')[0] || value;
+  const basename = path.split('/').pop() || '';
+  return basename.includes('.') ? basename.split('.').pop() || '' : '';
+};
+
+const inferMediaKind = (media: ApiRecord, url: string, key = ''): TimelineMedia['kind'] => {
+  const explicitKind = firstString(media.kind, media.mediaKind, media.category).toLowerCase();
+  if (explicitKind === 'image' || explicitKind === 'video' || explicitKind === 'file') {
+    return explicitKind;
+  }
+
+  const mimeType = firstString(media.mime_type, media.mimeType, media.mimetype, media.contentType, media.type).toLowerCase();
   const filename = firstString(media.original_name, media.originalName, media.file_name, media.fileName, media.name, media.filename);
-  const extension = firstString(media.extension, filename.split('?')[0]?.split('.').pop(), url.split('?')[0]?.split('.').pop()).toLowerCase();
+  const extension = firstString(media.extension, getExtensionFromPath(filename), getExtensionFromPath(key), getExtensionFromPath(url)).toLowerCase();
 
   if (mimeType.startsWith('image/') || imageExtensions.has(extension)) {
     return 'image';
@@ -92,27 +136,35 @@ const inferMediaKind = (media: ApiRecord, url: string): TimelineMedia['kind'] =>
 };
 
 const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => {
-  const media = typeof value === 'string' ? { url: value } : value;
-  if (!isRecord(media)) {
+  const media = getMediaRecord(value);
+  if (!media) {
     return null;
   }
 
-  const key = firstString(media.key, media.file_path, media.filePath, media.path);
   const rawUrl =
     firstString(media.url, media.src, media.file_url, media.fileUrl, media.href) ||
-    (key ? `/upload/render?key=${encodeURIComponent(key)}` : '');
+    firstString(media.render_url, media.renderUrl);
+  const key =
+    firstString(media.key, media.file_path, media.filePath, media.path) ||
+    getKeyFromMediaUrl(rawUrl);
+  const resolvedRawUrl = rawUrl || (key ? `/upload/render?key=${encodeURIComponent(key)}` : '');
 
-  if (!rawUrl) {
+  if (!resolvedRawUrl) {
     return null;
   }
 
-  const url = resolveMediaUrl(rawUrl);
+  const initialUrl = resolveMediaUrl(resolvedRawUrl);
   const alt = firstString(media.alt, media.caption, media.original_name, media.originalName, media.file_name, media.fileName) || 'Post media';
+  const kind = inferMediaKind(media, initialUrl, key);
+  const url = key ? resolveMediaUrl(`/upload/render?key=${encodeURIComponent(key)}`) : initialUrl;
+  const rawHlsUrl = firstString(media.hls_url, media.hlsUrl) || (key ? `/upload/hls/playlist?key=${encodeURIComponent(key)}` : '');
+  const hlsUrl = kind === 'video' && rawHlsUrl ? resolveMediaUrl(rawHlsUrl) : undefined;
 
   return {
     id: firstString(media.id, media.media_id, media.mediaId, media.file_path, media.key, media.url) || `${url}-${index}`,
-    kind: inferMediaKind(media, url),
+    kind,
     url,
+    hlsUrl,
     alt,
     poster: firstString(media.poster, media.thumbnail_url, media.thumbnailUrl) || undefined,
   };
@@ -120,9 +172,12 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
 
 const getMediaItems = (post: ApiRecord) => {
   const mediaSources = [post.media, post.medias, post.attachments, post.files, post.uploads, post.images, post.videos];
-  const list = mediaSources.find(Array.isArray);
-  const media = Array.isArray(list) ? list : [];
-  const directMedia = [firstString(post.image_url, post.imageUrl, post.image), firstString(post.video_url, post.videoUrl, post.video), firstString(post.file_url, post.fileUrl)].filter(Boolean);
+  const media = mediaSources.flatMap((source) => (Array.isArray(source) ? source : []));
+  const directMedia = [
+    { url: firstString(post.image_url, post.imageUrl, post.image), kind: 'image' },
+    { url: firstString(post.video_url, post.videoUrl, post.video), kind: 'video' },
+    { url: firstString(post.file_url, post.fileUrl), kind: 'file' },
+  ].filter((item) => item.url);
 
   return [...media, ...directMedia].map(normalizeMedia).filter((item): item is TimelineMedia => Boolean(item));
 };

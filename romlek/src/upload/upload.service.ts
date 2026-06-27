@@ -1,92 +1,30 @@
 import {
   BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
+import { Express } from 'express';
 import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
-import {
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ConfigService } from '@nestjs/config';
-import { Express } from 'express';
-import { extname } from 'path';
-import { Readable } from 'stream';
+import { UploadHlsService } from './upload-hls.service';
 import { UploadRepository } from './upload.repository';
-
-type WebStreamBody = {
-  transformToWebStream: () => Parameters<typeof Readable.fromWeb>[0];
-};
-
-type UploadOptions = {
-  uploadedBy?: string;
-  isPublic?: string | boolean;
-};
-
-type RenderedFile = {
-  body: Readable;
-  filename: string;
-  contentType: string;
-  contentLength?: number;
-  contentRange?: string;
-  etag?: string;
-  lastModified?: Date;
-  statusCode: number;
-};
-
-type ByteRange = {
-  start?: number;
-  end?: number;
-  suffixLength?: number;
-};
-
-const MAX_RENDER_CHUNK_SIZE = 8 * 1024 * 1024;
-const SIGNED_RENDER_URL_TTL_SECONDS = 60 * 60;
+import { UploadStorageService } from './upload-storage.service';
+import { UploadOptions } from './upload.types';
+import {
+  generateFilename,
+  getExtension,
+  getFileUrl,
+  normalizeUploadPath,
+  parseBoolean,
+} from './upload.utils';
 
 @Injectable()
 export class UploadService {
-  private readonly client: S3Client;
-  private readonly bucket: string;
-
   constructor(
-    private config: ConfigService,
     private readonly uploadRepository: UploadRepository,
-  ) {
-    const endpoint = this.getRequiredConfig('CF_R2_API');
-    const accessKeyId = this.getRequiredConfig('CF_R2_ACCESS_KEY');
-    const secretAccessKey = this.getRequiredConfig('CF_R2_SECRET_KEY');
-    this.bucket = this.getRequiredConfig('CF_R2_BUCKET');
-
-    if (accessKeyId.length !== 32) {
-      throw new InternalServerErrorException(
-        'CF_R2_ACCESS_KEY must be 32 characters',
-      );
-    }
-
-    this.client = new S3Client({
-      region: 'auto',
-      endpoint,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-  }
-
-  private getRequiredConfig(name: string) {
-    const value = this.config.get<string>(name)?.trim();
-    if (!value) {
-      throw new InternalServerErrorException(`${name} is not configured`);
-    }
-    return value;
-  }
+    private readonly storage: UploadStorageService,
+    private readonly hls: UploadHlsService,
+  ) {}
 
   async upload(
     files?: Express.Multer.File[],
@@ -97,11 +35,9 @@ export class UploadService {
       throw new BadRequestException('No files uploaded');
     }
 
-    const uploadPath = this.normalizePath(path);
+    const uploadPath = normalizeUploadPath(path);
     const uploadedFiles = await Promise.all(
-      files.map((file) => {
-        return this.uploadOne(file, uploadPath, options);
-      }),
+      files.map((file) => this.uploadOne(file, uploadPath, options)),
     );
 
     return {
@@ -110,71 +46,49 @@ export class UploadService {
     };
   }
 
-  private normalizePath(path?: string) {
-    const trimmedPath = path?.trim();
-    if (!trimmedPath) {
-      return '';
-    }
-
-    const pathSegments = trimmedPath
-      .split('/')
-      .map((segment) => segment.trim())
-      .filter(Boolean);
-
-    if (pathSegments.some((segment) => segment === '..')) {
-      throw new BadRequestException('Upload path cannot contain .. segments');
-    }
-
-    return pathSegments.join('/');
-  }
-
   private async uploadOne(
     file: Express.Multer.File,
     path: string,
     options: UploadOptions,
   ) {
-    const filename = file.originalname?.trim();
-    if (!filename) {
+    const originalFilename = file.originalname?.trim();
+    if (!originalFilename) {
       throw new BadRequestException('Uploaded file must have a filename');
     }
 
-    const generatedFilename = this.generateFilename(filename);
-    const key = path ? `${path}/${generatedFilename}` : generatedFilename;
+    const filename = generateFilename(originalFilename);
+    const key = path ? `${path}/${filename}` : filename;
 
     try {
-      const command = new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      });
-      await this.client.send(command);
+      await this.storage.putObject(key, file.buffer, file.mimetype);
+      const hlsUrl = await this.hls.createVariantForUpload(file, key);
       const media = await this.uploadRepository.create(
         new CreateUploadDto({
-          file_name: generatedFilename,
-          original_name: filename,
+          file_name: filename,
+          original_name: originalFilename,
           file_path: key,
-          file_url: this.getFileUrl(key),
+          file_url: getFileUrl(key),
           mime_type: file.mimetype,
-          extension: this.getExtension(filename),
+          extension: getExtension(originalFilename),
           file_size: file.size,
           width: null,
           height: null,
           duration: null,
           storage_provider: 'r2',
           uploaded_by: options.uploadedBy?.trim() || null,
-          is_public: this.parseBoolean(options.isPublic),
+          is_public: parseBoolean(options.isPublic),
         }),
       );
 
       return {
-        originalFilename: filename,
-        filename: generatedFilename,
+        originalFilename,
+        filename,
         path,
         key,
+        hlsUrl,
         contentType: file.mimetype,
         size: file.size,
-        media,
+        media: hlsUrl ? { ...media, hls_url: hlsUrl } : media,
       };
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -182,225 +96,35 @@ export class UploadService {
     }
   }
 
-  private generateFilename(filename: string) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const safeFilename = filename.replace(/[/\\]/g, '').replace(/\s+/g, '-');
-    return `${timestamp}-${safeFilename}`;
+  getFile(key?: string, range?: string) {
+    return this.storage.getFile(key, range);
   }
 
-  private getExtension(filename: string) {
-    return extname(filename).replace('.', '').toLowerCase() || null;
+  getSignedRenderUrl(key?: string) {
+    return this.storage.getSignedRenderUrl(key);
   }
 
-  private getFileUrl(key: string) {
-    return `/upload/render?key=${encodeURIComponent(key)}`;
+  getFileMetadata(key?: string) {
+    return this.storage.getFileMetadata(key);
   }
 
-  private parseBoolean(value?: string | boolean) {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-
-    return value === 'true' || value === '1';
+  getHlsPlaylist(key?: string) {
+    return this.hls.getPlaylist(key);
   }
 
-  async getFile(key?: string, range?: string): Promise<RenderedFile> {
-    const objectKey = this.normalizeObjectKey(key);
-    const requestedRange = this.normalizeRange(range);
-
-    try {
-      const metadata = requestedRange
-        ? await this.client.send(
-            new HeadObjectCommand({
-              Bucket: this.bucket,
-              Key: objectKey,
-            }),
-          )
-        : null;
-      const totalSize = metadata?.ContentLength;
-      const resolvedRange =
-        requestedRange && totalSize !== undefined
-          ? this.resolveRange(requestedRange, totalSize)
-          : null;
-      const object = await this.client.send(
-        new GetObjectCommand({
-          Bucket: this.bucket,
-          Key: objectKey,
-          Range: resolvedRange
-            ? `bytes=${resolvedRange.start}-${resolvedRange.end}`
-            : undefined,
-        }),
-      );
-
-      if (!object.Body) {
-        throw new NotFoundException('File not found');
-      }
-
-      return {
-        body: this.toReadable(object.Body),
-        filename: objectKey.split('/').pop() ?? objectKey,
-        contentType: object.ContentType ?? 'application/octet-stream',
-        contentLength:
-          resolvedRange && totalSize !== undefined
-            ? resolvedRange.end - resolvedRange.start + 1
-            : object.ContentLength,
-        contentRange:
-          resolvedRange && totalSize !== undefined
-            ? `bytes ${resolvedRange.start}-${resolvedRange.end}/${totalSize}`
-            : object.ContentRange,
-        etag: object.ETag,
-        lastModified: object.LastModified,
-        statusCode:
-          resolvedRange || object.ContentRange
-            ? HttpStatus.PARTIAL_CONTENT
-            : HttpStatus.OK,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-
-      const errorName = error instanceof Error ? error.name : undefined;
-      if (errorName === 'NoSuchKey' || errorName === 'NotFound') {
-        throw new NotFoundException('File not found');
-      }
-
-      if (errorName === 'InvalidRange') {
-        throw new HttpException(
-          'Requested range is not satisfiable',
-          HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-        );
-      }
-
-      console.error('Error rendering file:', error);
-      throw new InternalServerErrorException('Error rendering file');
-    }
+  getHlsSegment(key?: string, segment?: string) {
+    return this.hls.getSegment(key, segment);
   }
 
-  async getSignedRenderUrl(key?: string) {
-    const objectKey = this.normalizeObjectKey(key);
-    const filename = objectKey.split('/').pop() ?? objectKey;
-
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: objectKey,
-        ResponseCacheControl: 'public, max-age=3600',
-        ResponseContentDisposition: `inline; filename="${filename.replace(/"/g, '\\"')}"`,
-      }),
-      { expiresIn: SIGNED_RENDER_URL_TTL_SECONDS },
-    );
+  getSignedHlsSegmentUrl(key?: string, segment?: string) {
+    return this.hls.getSignedSegmentUrl(key, segment);
   }
 
-  private normalizeObjectKey(key?: string) {
-    const objectKey = key?.trim().replace(/^\/+/, '');
-    if (!objectKey) {
-      throw new BadRequestException('File key is required');
-    }
-
-    const keySegments = objectKey.split('/').filter(Boolean);
-    if (keySegments.some((segment) => segment === '..')) {
-      throw new BadRequestException('File key cannot contain .. segments');
-    }
-
-    return keySegments.join('/');
+  createHlsForKey(key?: string) {
+    return this.hls.createVariantForKey(key);
   }
 
-  private normalizeRange(range?: string): ByteRange | undefined {
-    const value = range?.trim();
-    if (!value) {
-      return undefined;
-    }
-
-    const match = /^bytes=(\d*)-(\d*)$/.exec(value);
-    if (!match || value === 'bytes=-') {
-      throw new BadRequestException('Invalid range header');
-    }
-
-    const [, startValue, endValue] = match;
-    const start = startValue ? Number(startValue) : undefined;
-    const end = endValue ? Number(endValue) : undefined;
-
-    if (
-      (start !== undefined && !Number.isSafeInteger(start)) ||
-      (end !== undefined && !Number.isSafeInteger(end))
-    ) {
-      throw new BadRequestException('Invalid range header');
-    }
-
-    if (start === undefined && end !== undefined) {
-      return { suffixLength: end };
-    }
-
-    return { start, end };
-  }
-
-  private resolveRange(range: ByteRange, totalSize: number) {
-    if (!Number.isSafeInteger(totalSize) || totalSize <= 0) {
-      throw new HttpException(
-        'Requested range is not satisfiable',
-        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-      );
-    }
-
-    if (range.suffixLength !== undefined) {
-      if (range.suffixLength <= 0) {
-        throw new BadRequestException('Invalid range header');
-      }
-
-      const length = Math.min(range.suffixLength, totalSize);
-      return {
-        start: totalSize - length,
-        end: totalSize - 1,
-      };
-    }
-
-    const start = range.start ?? 0;
-    if (start >= totalSize) {
-      throw new HttpException(
-        'Requested range is not satisfiable',
-        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-      );
-    }
-
-    const requestedEnd = range.end ?? totalSize - 1;
-    if (requestedEnd < start) {
-      throw new BadRequestException('Invalid range header');
-    }
-
-    const boundedEnd = Math.min(
-      requestedEnd,
-      totalSize - 1,
-      start + MAX_RENDER_CHUNK_SIZE - 1,
-    );
-
-    return { start, end: boundedEnd };
-  }
-
-  private toReadable(body: unknown) {
-    if (body instanceof Readable) {
-      return body;
-    }
-
-    if (
-      body &&
-      typeof body === 'object' &&
-      'transformToWebStream' in body &&
-      typeof body.transformToWebStream === 'function'
-    ) {
-      const webStream = (body as WebStreamBody).transformToWebStream();
-      return Readable.fromWeb(webStream);
-    }
-
-    if (body && typeof body === 'object' && Symbol.asyncIterator in body) {
-      return Readable.from(body as AsyncIterable<Uint8Array>);
-    }
-
-    throw new InternalServerErrorException('File body is not readable');
-  }
-
-  async create(createUploadDto: CreateUploadDto) {
+  create(createUploadDto: CreateUploadDto) {
     return this.uploadRepository.create(createUploadDto);
   }
 

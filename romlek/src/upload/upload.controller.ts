@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Headers,
+  Head,
   UseInterceptors,
   UploadedFiles,
   Query,
@@ -90,6 +91,18 @@ export class UploadController {
     return this.uploadService.findAll();
   }
 
+  @Head('render')
+  @ApiOperation({ summary: 'Read uploaded file metadata' })
+  async headFile(
+    @Query('key') key: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
+    response.setHeader('Cache-Control', 'no-store');
+    response.redirect(302, signedUrl);
+    return undefined;
+  }
+
   @Get('render')
   @ApiOperation({ summary: 'Render uploaded file' })
   async renderFile(
@@ -97,7 +110,7 @@ export class UploadController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const signedUrl = await this.uploadService.getSignedRenderUrl(key);
-    response.setHeader('Cache-Control', 'public, max-age=3600');
+    response.setHeader('Cache-Control', 'no-store');
     response.redirect(302, signedUrl);
   }
 
@@ -110,6 +123,56 @@ export class UploadController {
   ) {
     const file = await this.uploadService.getFile(key, range);
 
+    this.setMediaHeaders(response, file);
+
+    return new StreamableFile(file.body);
+  }
+
+  @Get('hls/playlist')
+  @ApiOperation({ summary: 'Render uploaded video HLS playlist' })
+  async hlsPlaylist(
+    @Query('key') key: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const playlist = await this.uploadService.getHlsPlaylist(key);
+    response.setHeader('Content-Type', playlist.contentType);
+    response.setHeader('Cache-Control', 'no-store');
+    return playlist.body;
+  }
+
+  @Get('hls/segment')
+  @ApiOperation({ summary: 'Render uploaded video HLS segment' })
+  async hlsSegment(
+    @Query('key') key: string,
+    @Query('segment') segment: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const signedUrl = await this.uploadService.getSignedHlsSegmentUrl(
+      key,
+      segment,
+    );
+    response.setHeader('Cache-Control', 'no-store');
+    response.redirect(302, signedUrl);
+  }
+
+  @Post('hls/transcode')
+  @ApiOperation({ summary: 'Create HLS variant for an uploaded video' })
+  createHlsVariant(@Query('key') key: string) {
+    return this.uploadService.createHlsForKey(key);
+  }
+
+  private setMediaHeaders(
+    response: Response,
+    file: {
+      statusCode: number;
+      contentType: string;
+      contentLength?: number;
+      contentRange?: string;
+      etag?: string;
+      lastModified?: Date;
+      filename: string;
+    },
+  ) {
     response.status(file.statusCode);
     response.setHeader('Content-Type', file.contentType);
     response.setHeader('Accept-Ranges', 'bytes');
@@ -132,8 +195,6 @@ export class UploadController {
       'Content-Disposition',
       `inline; filename="${file.filename}"`,
     );
-
-    return new StreamableFile(file.body);
   }
 
   @Get(':id')

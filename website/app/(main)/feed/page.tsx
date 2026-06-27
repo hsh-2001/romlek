@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Button, Input } from 'antd';
 import { Bookmark, Heart, ImagePlus, MessageCircle, Send, Sparkles } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
+import { HlsVideo } from '@/app/_components/HlsVideo';
 import { StudioShell } from '@/app/_components/StudioShell';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
@@ -82,7 +83,7 @@ export default function FeedPage() {
                 {post.media.map((media) => (
                   <figure key={media.id} className={`feed-media-item ${media.kind}`}>
                     {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                    {media.kind === 'video' ? <video src={media.url} poster={media.poster} controls preload="none" playsInline /> : null}
+                    {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
                     {media.kind === 'file' ? (
                       <a className="feed-media-file" href={media.url} target="_blank" rel="noopener noreferrer">
                         {media.alt}
