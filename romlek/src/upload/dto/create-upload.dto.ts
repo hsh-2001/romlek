@@ -25,7 +25,7 @@ export class CreateUploadDto {
   @ApiPropertyOptional({ default: 'r2' })
   storage_provider?: string;
   @ApiPropertyOptional({ nullable: true })
-  uploaded_by?: string | null;
+  uploaded_by?: string | number | null;
   @ApiPropertyOptional({ default: false })
   is_public?: boolean;
   @ApiPropertyOptional()

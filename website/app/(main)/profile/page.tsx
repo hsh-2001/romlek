@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button, Segmented } from 'antd';
-import { AtSign, CalendarDays, Mail, Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { AtSign, CalendarDays, FileText, Image, Mail, MapPin, Palette, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
@@ -24,6 +24,11 @@ export default function ProfilePage() {
   const username = user?.username || 'you';
   const email = user?.email || 'you@romlek.local';
   const initials = getInitials(displayName);
+  const profileStats = [
+    { icon: MapPin, label: t('profile.visits'), value: '24' },
+    { icon: FileText, label: t('profile.drafts'), value: '12' },
+    { icon: Image, label: t('profile.mediaFiles'), value: '86' },
+  ];
   const accountRows = [
     { icon: UserRound, label: t('profile.displayName'), value: displayName },
     { icon: AtSign, label: t('profile.username'), value: `@${username}` },
@@ -31,15 +36,17 @@ export default function ProfilePage() {
     { icon: CalendarDays, label: t('profile.joinedLabel'), value: t('profile.joined') },
   ];
   const activityRows = [
-    { title: t('profile.activityPost'), body: t('feed.secondPost') },
-    { title: t('profile.activityReply'), body: t('notifications.emptyBody') },
+    { icon: Sparkles, title: t('profile.activityPost'), body: t('profile.activityPostBody') },
+    { icon: MapPin, title: t('profile.activityReply'), body: t('profile.activityReplyBody') },
   ];
 
   return (
     <AppShell active="profile">
       <div className="profile-page">
         <header className="profile-hero">
-          <div className="profile-cover" />
+          <div className="profile-cover">
+            <span><Sparkles size={16} aria-hidden="true" /> {t('profile.creatorWorkspace')}</span>
+          </div>
           <div className="profile-identity">
             <span className="profile-avatar">{initials}</span>
             <Button className="profile-edit-button" shape="round">
@@ -54,57 +61,74 @@ export default function ProfilePage() {
               <span><ShieldCheck size={16} aria-hidden="true" /> {t('profile.workspace')}</span>
               <span><Palette size={16} aria-hidden="true" /> {t('profile.appearance')}</span>
             </div>
-          </div>
-        </header>
-
-        <section className="profile-grid">
-          <article className="profile-card">
-            <div className="profile-card-heading">
-              <h2>{t('profile.account')}</h2>
-              <p>{t('profile.accountBody')}</p>
-            </div>
-            <div className="profile-account-list">
-              {accountRows.map((row) => {
-                const Icon = row.icon;
+            <div className="profile-stats" aria-label={t('profile.stats')}>
+              {profileStats.map((item) => {
+                const Icon = item.icon;
                 return (
-                  <div key={row.label} className="profile-account-row">
+                  <article key={item.label}>
                     <span><Icon size={17} aria-hidden="true" /></span>
-                    <div>
-                      <small>{row.label}</small>
-                      <strong>{row.value}</strong>
-                    </div>
-                  </div>
+                    <strong>{item.value}</strong>
+                    <small>{item.label}</small>
+                  </article>
                 );
               })}
             </div>
-          </article>
+          </div>
+        </header>
 
-          <article className="profile-card">
+        <section className="profile-content">
+          <section className="profile-card profile-activity-card">
             <div className="profile-card-heading">
-              <h2>{t('profile.settings')}</h2>
-              <p>{t('profile.settingsBody')}</p>
+              <h2>{t('profile.activity')}</h2>
+              <p>{t('profile.activityBody')}</p>
             </div>
-            <PreferenceControls className="profile-preference-controls" />
-          </article>
-        </section>
+            <Segmented value={activeProfileTab} className="profile-tabs" options={profileTabOptions} block onChange={(value) => setActiveProfileTab(String(value))} />
+            <div className="profile-activity-list">
+              {activityRows.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <article key={item.title} className="profile-activity-item">
+                    <span className="profile-activity-icon"><Icon size={18} aria-hidden="true" /></span>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.body}</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
-        <section className="profile-card profile-activity-card">
-          <div className="profile-card-heading">
-            <h2>{t('profile.activity')}</h2>
-            <p>{t('profile.activityBody')}</p>
-          </div>
-          <Segmented value={activeProfileTab} className="profile-tabs" options={profileTabOptions} block onChange={(value) => setActiveProfileTab(String(value))} />
-          <div className="profile-activity-list">
-            {activityRows.map((item) => (
-              <article key={item.title} className="profile-activity-item">
-                <span className="mini-avatar">{initials}</span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <aside className="profile-side">
+            <article className="profile-card">
+              <div className="profile-card-heading">
+                <h2>{t('profile.account')}</h2>
+                <p>{t('profile.accountBody')}</p>
+              </div>
+              <div className="profile-account-list">
+                {accountRows.map((row) => {
+                  const Icon = row.icon;
+                  return (
+                    <div key={row.label} className="profile-account-row">
+                      <span><Icon size={17} aria-hidden="true" /></span>
+                      <div>
+                        <small>{row.label}</small>
+                        <strong>{row.value}</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+
+            <article className="profile-card">
+              <div className="profile-card-heading">
+                <h2>{t('profile.settings')}</h2>
+                <p>{t('profile.settingsBody')}</p>
+              </div>
+              <PreferenceControls className="profile-preference-controls" />
+            </article>
+          </aside>
         </section>
       </div>
     </AppShell>

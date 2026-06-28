@@ -17,7 +17,7 @@ export default function FeedPage() {
   const { t } = usePreferences();
   const [composer, setComposer] = useState('');
   const [activeFeedTab, setActiveFeedTab] = useState('for-you');
-  const apiPosts = useTimelinePosts();
+  const apiPosts = useTimelinePosts(0, { publicOnly: true });
   const displayName = user?.name || user?.username || user?.email || 'Welcome';
   const initials = getInitials(displayName);
   const feedTabOptions = useMemo(
@@ -60,7 +60,7 @@ export default function FeedPage() {
           <Input.TextArea className="composer-input" value={composer} autoSize={{ minRows: 3, maxRows: 6 }} placeholder={t('feed.composer')} onChange={(event) => setComposer(event.target.value)} />
           <div className="composer-actions">
             <Button onClick={() => {
-              router.push('/media');
+              router.push('/studio');
             }} type="text" className="composer-tool" aria-label={t('feed.addMedia')}><ImagePlus size={18} aria-hidden="true" /> {t('feed.addMedia')}</Button>
             <Button className="home-post-small" shape="round" type="primary">
               <Send size={16} aria-hidden="true" />

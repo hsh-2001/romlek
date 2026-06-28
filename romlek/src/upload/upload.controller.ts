@@ -1,9 +1,12 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Body,
   Head,
+  Headers,
+  Param,
   UseInterceptors,
   UploadedFiles,
   Query,
@@ -13,6 +16,7 @@ import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { UploadService } from './upload.service';
+import type { RenderedFile, RenderedFileMetadata } from './upload.types';
 
 @Controller('upload')
 export class UploadController {
@@ -20,8 +24,17 @@ export class UploadController {
 
   @Get()
   @ApiOperation({ summary: 'List uploaded media' })
-  findAll() {
-    return this.uploadService.findAll();
+  findAll(
+    @Query('public_only') publicOnly?: string | boolean,
+    @Query('uploaded_by') uploadedBy?: string,
+  ) {
+    return this.uploadService.findAll({ publicOnly, uploadedBy });
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete uploaded media' })
+  delete(@Param('id') id: string) {
+    return this.uploadService.delete(id);
   }
 
   @Post()
@@ -85,21 +98,27 @@ export class UploadController {
   }
 
   @Head('render')
-  @ApiOperation({ summary: 'Resolve uploaded media render URL' })
+  @ApiOperation({ summary: 'Read uploaded media metadata' })
   async headRender(
     @Query('key') key: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    return this.redirectToSignedRenderUrl(key, response);
+    const metadata = await this.uploadService.getFileMetadata(key);
+    this.setRenderHeaders(response, metadata);
+    response.status(metadata.statusCode).end();
   }
 
   @Get('render')
   @ApiOperation({ summary: 'Render uploaded media' })
   async render(
     @Query('key') key: string,
-    @Res({ passthrough: true }) response: Response,
+    @Headers('range') range: string | undefined,
+    @Res() response: Response,
   ) {
-    return this.redirectToSignedRenderUrl(key, response);
+    const file = await this.uploadService.getFile(key, range);
+    this.setRenderHeaders(response, file);
+    response.status(file.statusCode);
+    file.body.pipe(response);
   }
 
   @Get('hls/playlist')
@@ -135,10 +154,33 @@ export class UploadController {
     return this.uploadService.createHlsForKey(key);
   }
 
-  private async redirectToSignedRenderUrl(key: string, response: Response) {
-    const signedUrl = await this.uploadService.getSignedRenderUrl(key);
+  private setRenderHeaders(
+    response: Response,
+    file: RenderedFile | RenderedFileMetadata,
+  ) {
+    const filename = file.filename.replace(/"/g, '\\"');
+    response.setHeader('Content-Type', file.contentType);
     response.setHeader('Cache-Control', 'no-store');
-    response.redirect(302, signedUrl);
-    return undefined;
+    response.setHeader('Accept-Ranges', 'bytes');
+    response.setHeader(
+      'Content-Disposition',
+      `inline; filename="${filename}"`,
+    );
+
+    if (file.contentLength !== undefined) {
+      response.setHeader('Content-Length', file.contentLength.toString());
+    }
+
+    if ('contentRange' in file && file.contentRange) {
+      response.setHeader('Content-Range', file.contentRange);
+    }
+
+    if (file.etag) {
+      response.setHeader('ETag', file.etag);
+    }
+
+    if (file.lastModified) {
+      response.setHeader('Last-Modified', file.lastModified.toUTCString());
+    }
   }
 }

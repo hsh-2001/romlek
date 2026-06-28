@@ -13,6 +13,8 @@ export type TimelineMedia = {
   hlsUrl?: string;
   alt: string;
   poster?: string;
+  uploadedBy?: string;
+  isPublic?: boolean;
 };
 
 export type TimelinePost = {
@@ -25,6 +27,11 @@ export type TimelinePost = {
   media: TimelineMedia[];
 };
 
+type TimelinePostOptions = {
+  publicOnly?: boolean;
+  uploadedBy?: string;
+};
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 const imageExtensions = new Set(['apng', 'avif', 'gif', 'jpg', 'jpeg', 'png', 'svg', 'webp']);
 const videoExtensions = new Set(['avi', 'm4v', 'mov', 'mp4', 'mpeg', 'mpg', 'ogg', 'ogv', 'webm']);
@@ -32,6 +39,7 @@ const videoExtensions = new Set(['avi', 'm4v', 'mov', 'mp4', 'mpeg', 'mpg', 'ogg
 const isRecord = (value: unknown): value is ApiRecord => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const firstString = (...values: unknown[]) => values.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
 const firstNumber = (...values: unknown[]) => values.find((value): value is number => typeof value === 'number' && Number.isFinite(value));
+const firstBoolean = (...values: unknown[]) => values.find((value): value is boolean => typeof value === 'boolean');
 
 const getApiItems = (payload: unknown): ApiRecord[] => {
   if (Array.isArray(payload)) {
@@ -161,16 +169,22 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
   const hlsUrl = kind === 'video' && rawHlsUrl ? resolveMediaUrl(rawHlsUrl) : undefined;
 
   return {
-    id: firstString(media.id, media.media_id, media.mediaId, media.file_path, media.key, media.url) || `${url}-${index}`,
+    id:
+      firstString(media.id, media.media_id, media.mediaId) ||
+      String(firstNumber(media.id, media.media_id, media.mediaId) ?? '') ||
+      firstString(media.file_path, media.key, media.url) ||
+      `${url}-${index}`,
     kind,
     url,
     hlsUrl,
     alt,
     poster: firstString(media.poster, media.thumbnail_url, media.thumbnailUrl) || undefined,
+    uploadedBy: firstString(media.uploaded_by, media.uploadedBy, media.uploader_id, media.uploaderId) || undefined,
+    isPublic: firstBoolean(media.is_public, media.isPublic),
   };
 };
 
-const getMediaItems = (post: ApiRecord) => {
+const getMediaItems = (post: ApiRecord, options: TimelinePostOptions = {}) => {
   const mediaSources = [post.media, post.medias, post.attachments, post.files, post.uploads, post.images, post.videos];
   const media = mediaSources.flatMap((source) => (Array.isArray(source) ? source : []));
   const directMedia = [
@@ -179,7 +193,10 @@ const getMediaItems = (post: ApiRecord) => {
     { url: firstString(post.file_url, post.fileUrl), kind: 'file' },
   ].filter((item) => item.url);
 
-  return [...media, ...directMedia].map(normalizeMedia).filter((item): item is TimelineMedia => Boolean(item));
+  return [...media, ...directMedia]
+    .map(normalizeMedia)
+    .filter((item): item is TimelineMedia => Boolean(item))
+    .filter((item) => !options.publicOnly || item.isPublic === true);
 };
 
 const formatRelativeTime = (value: string) => {
@@ -195,7 +212,7 @@ const formatRelativeTime = (value: string) => {
   return `${Math.floor(diffSeconds / 86400)}d`;
 };
 
-const normalizePost = (post: ApiRecord, index: number): TimelinePost => {
+const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOptions = {}): TimelinePost => {
   const author = [post.user, post.author, post.created_by, post.createdBy].find(isRecord) ?? {};
   const name = firstString(author.name, author.display_name, author.displayName, post.name, post.author_name, post.authorName) || 'Romlek';
   const username = firstString(author.username, post.username, post.author_username, post.authorUsername) || 'romlek';
@@ -210,13 +227,13 @@ const normalizePost = (post: ApiRecord, index: number): TimelinePost => {
     username,
     time: createdAt ? formatRelativeTime(createdAt) : firstString(post.time) || 'now',
     body,
-    media: getMediaItems(post),
+    media: getMediaItems(post, options),
   };
 };
 
-const normalizeUploadAsPost = (media: ApiRecord, index: number): TimelinePost | null => {
+const normalizeUploadAsPost = (media: ApiRecord, index: number, options: TimelinePostOptions = {}): TimelinePost | null => {
   const normalizedMedia = normalizeMedia(media, index);
-  if (!normalizedMedia) {
+  if (!normalizedMedia || (options.publicOnly && normalizedMedia.isPublic !== true)) {
     return null;
   }
 
@@ -233,15 +250,18 @@ const normalizeUploadAsPost = (media: ApiRecord, index: number): TimelinePost | 
   };
 };
 
-export const useTimelinePosts = (refreshKey = 0) => {
+export const useTimelinePosts = (refreshKey = 0, options: TimelinePostOptions = {}) => {
   const { api } = useAuth();
   const [posts, setPosts] = useState<TimelinePost[]>([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const payload = await api<unknown>('/posts');
-        const normalizedPosts = getApiItems(payload).map(normalizePost);
+        const query = options.publicOnly ? '?public_only=true' : '';
+        const payload = await api<unknown>(`/posts${query}`);
+        const normalizedPosts = getApiItems(payload)
+          .map((post, index) => normalizePost(post, index, options))
+          .filter((post) => !options.publicOnly || post.media.length > 0);
         if (normalizedPosts.length) {
           setPosts(normalizedPosts);
           return;
@@ -251,15 +271,25 @@ export const useTimelinePosts = (refreshKey = 0) => {
       }
 
       try {
-        const payload = await api<unknown>('/upload');
-        setPosts(getApiItems(payload).map(normalizeUploadAsPost).filter((post): post is TimelinePost => Boolean(post)));
+        const searchParams = new URLSearchParams();
+        if (options.publicOnly) {
+          searchParams.set('public_only', 'true');
+        }
+
+        if (options.uploadedBy) {
+          searchParams.set('uploaded_by', options.uploadedBy);
+        }
+
+        const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+        const payload = await api<unknown>(`/upload${query}`);
+        setPosts(getApiItems(payload).map((media, index) => normalizeUploadAsPost(media, index, options)).filter((post): post is TimelinePost => Boolean(post)));
       } catch {
         setPosts([]);
       }
     };
 
     void fetchPosts();
-  }, [api, refreshKey]);
+  }, [api, refreshKey, options.publicOnly, options.uploadedBy]);
 
   return posts;
 };

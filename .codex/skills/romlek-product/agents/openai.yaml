@@ -1,0 +1,4 @@
+interface:
+  display_name: "Romlek Product"
+  short_description: "Visit, trip, AI content, and publishing guidance"
+  default_prompt: "Use $romlek-product to design this Romlek feature around visits, trip histories, AI content creation, and social publishing."

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Express } from 'express';
 import { CreateUploadDto } from './dto/create-upload.dto';
@@ -14,6 +15,7 @@ import {
   getExtension,
   getFileUrl,
   getHlsPlaylistUrl,
+  getHlsPrefix,
   isVideo,
   normalizeUploadPath,
   parseBoolean,
@@ -59,6 +61,11 @@ export class UploadService {
 
     const filename = generateFilename(originalFilename);
     const key = path ? `${path}/${filename}` : filename;
+    const uploadedBy = this.normalizeUploaderId(options.uploadedBy);
+
+    if (!uploadedBy) {
+      throw new BadRequestException('Uploader id is required');
+    }
 
     try {
       await this.storage.putObject(key, file.buffer, file.mimetype);
@@ -76,7 +83,7 @@ export class UploadService {
           height: null,
           duration: null,
           storage_provider: 'r2',
-          uploaded_by: options.uploadedBy?.trim() || null,
+          uploaded_by: uploadedBy,
           is_public: parseBoolean(options.isPublic),
         }),
       );
@@ -125,12 +132,49 @@ export class UploadService {
     return this.hls.createVariantForKey(key);
   }
 
-  async findAll() {
-    const uploads = await this.uploadRepository.findAll();
+  private normalizeUploaderId(uploadedBy?: string | number) {
+    if (uploadedBy === undefined || uploadedBy === null || uploadedBy === '') {
+      return null;
+    }
+
+    return String(uploadedBy).trim() || null;
+  }
+
+  async findAll(
+    options: { publicOnly?: string | boolean; uploadedBy?: string } = {},
+  ) {
+    const uploads = await this.uploadRepository.findAll({
+      publicOnly: parseBoolean(options.publicOnly),
+      uploadedBy: this.normalizeUploaderId(options.uploadedBy),
+    });
     return uploads.map((upload) =>
       isVideo(upload.mime_type, upload.original_name || upload.file_name)
         ? { ...upload, hls_url: getHlsPlaylistUrl(upload.file_path) }
         : upload,
     );
+  }
+
+  async delete(id: string) {
+    const upload = await this.uploadRepository.findById(id);
+    if (!upload) {
+      throw new NotFoundException('Upload not found');
+    }
+
+    try {
+      await this.storage.deleteObject(upload.file_path);
+
+      if (isVideo(upload.mime_type, upload.original_name || upload.file_name)) {
+        await this.storage.deletePrefix(getHlsPrefix(upload.file_path));
+      }
+
+      const deletedUpload = await this.uploadRepository.deleteById(id);
+      return {
+        message: 'Upload deleted successfully',
+        upload: deletedUpload,
+      };
+    } catch (error) {
+      console.error('Error deleting upload:', error);
+      throw new InternalServerErrorException('Error deleting upload');
+    }
   }
 }

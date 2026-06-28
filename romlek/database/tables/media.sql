@@ -11,7 +11,7 @@ CREATE TABLE media (
     height INTEGER,
     duration INTEGER,
     storage_provider VARCHAR(50) DEFAULT 'local',
-    uploaded_by UUID,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     is_public BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

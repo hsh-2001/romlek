@@ -6,8 +6,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -67,6 +70,48 @@ export class UploadStorageService {
         ContentType: contentType,
       }),
     );
+  }
+
+  async deleteObject(key: string) {
+    const objectKey = normalizeObjectKey(key);
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+      }),
+    );
+  }
+
+  async deletePrefix(prefix: string) {
+    const objectPrefix = normalizeObjectKey(prefix).replace(/\/?$/, '/');
+    let continuationToken: string | undefined;
+
+    do {
+      const listedObjects = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: objectPrefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      const objects = (listedObjects.Contents ?? [])
+        .map((object) => object.Key)
+        .filter((key): key is string => Boolean(key));
+
+      if (objects.length) {
+        await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: {
+              Objects: objects.map((key) => ({ Key: key })),
+              Quiet: true,
+            },
+          }),
+        );
+      }
+
+      continuationToken = listedObjects.NextContinuationToken;
+    } while (continuationToken);
   }
 
   async getFile(key?: string, range?: string): Promise<RenderedFile> {

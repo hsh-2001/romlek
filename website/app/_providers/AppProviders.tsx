@@ -10,6 +10,7 @@ import type { AuthPayload, AuthUser, LoginCredentials, RegisterCredentials } fro
 type Locale = 'en' | 'km';
 type ThemeMode = 'light' | 'dark';
 type Messages = typeof en;
+type TranslationValues = Record<string, string | number>;
 
 interface ApiRequestOptions extends Omit<AxiosRequestConfig, 'data' | 'method' | 'url'> {
   method?: Method;
@@ -23,7 +24,7 @@ interface PreferencesContextValue {
   setLocale: (locale: Locale) => void;
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
-  t: (key: string) => string;
+  t: (key: string, values?: TranslationValues) => string;
 }
 
 interface AuthContextValue {
@@ -42,6 +43,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const messages: Record<Locale, Messages> = { en, km };
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+const oneYearInSeconds = 60 * 60 * 24 * 365;
+const thirtyDaysInSeconds = 60 * 60 * 24 * 30;
+const supportedLocales = ['en', 'km'] satisfies Locale[];
+const supportedThemes = ['light', 'dark'] satisfies ThemeMode[];
+
+const isLocale = (value: string | null): value is Locale => {
+  return supportedLocales.includes(value as Locale);
+};
+
+const isThemeMode = (value: string | null): value is ThemeMode => {
+  return supportedThemes.includes(value as ThemeMode);
+};
 
 const getCookie = (name: string) => {
   if (typeof document === 'undefined') {
@@ -64,16 +77,28 @@ const clearCookie = (name: string) => {
   document.cookie = `${name}=; path=/; max-age=0; samesite=lax`;
 };
 
-const resolveTranslation = (locale: Locale, key: string) => {
-  const result = key.split('.').reduce<unknown>((value, part) => {
+const getMessageValue = (locale: Locale, key: string) => {
+  return key.split('.').reduce<unknown>((value, part) => {
     if (value && typeof value === 'object' && part in value) {
       return (value as Record<string, unknown>)[part];
     }
 
     return undefined;
   }, messages[locale]);
+};
 
-  return typeof result === 'string' ? result : key;
+const interpolate = (template: string, values?: TranslationValues) => {
+  if (!values) {
+    return template;
+  }
+
+  return template.replace(/\{(\w+)\}/g, (match, token) => String(values[token] ?? match));
+};
+
+const resolveTranslation = (locale: Locale, key: string, values?: TranslationValues) => {
+  const result = getMessageValue(locale, key) ?? getMessageValue('en', key);
+
+  return typeof result === 'string' ? interpolate(result, values) : key;
 };
 
 const resolveErrorMessage = (error: AxiosError) => {
@@ -117,15 +142,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    const storedLocale = getCookie('romlek_locale') as Locale | null;
-    const storedTheme = getCookie('romlek_theme') as ThemeMode | null;
+    const storedLocale = getCookie('romlek_locale');
+    const storedTheme = getCookie('romlek_theme');
     const storedToken = getCookie('auth_token');
 
-    if (storedLocale === 'en' || storedLocale === 'km') {
+    if (isLocale(storedLocale)) {
       setLocaleState(storedLocale);
     }
 
-    if (storedTheme === 'light' || storedTheme === 'dark') {
+    if (isThemeMode(storedTheme)) {
       setThemeState(storedTheme);
     }
 
@@ -141,15 +166,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
-    setCookie('romlek_locale', nextLocale, 60 * 60 * 24 * 365);
+    setCookie('romlek_locale', nextLocale, oneYearInSeconds);
   }, []);
 
   const setTheme = useCallback((nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
-    setCookie('romlek_theme', nextTheme, 60 * 60 * 24 * 365);
+    setCookie('romlek_theme', nextTheme, oneYearInSeconds);
   }, []);
 
-  const t = useCallback((key: string) => resolveTranslation(locale, key), [locale]);
+  const t = useCallback((key: string, values?: TranslationValues) => resolveTranslation(locale, key, values), [locale]);
 
   const api = useCallback<ApiClient>(
     async <T,>(url: string, options: ApiRequestOptions = {}) => {
@@ -195,7 +220,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
     if (nextToken) {
       setTokenState(nextToken);
-      setCookie('auth_token', nextToken, 60 * 60 * 24 * 30);
+      setCookie('auth_token', nextToken, thirtyDaysInSeconds);
     }
 
     if (nextUser) {

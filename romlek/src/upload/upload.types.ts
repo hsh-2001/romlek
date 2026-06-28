@@ -5,7 +5,7 @@ export type WebStreamBody = {
 };
 
 export type UploadOptions = {
-  uploadedBy?: string;
+  uploadedBy?: string | number;
   isPublic?: string | boolean;
 };
 

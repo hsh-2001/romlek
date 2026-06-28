@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Bell, Home, Mail, PenLine, Search, User } from 'lucide-react';
+import { Home, PenLine, User } from 'lucide-react';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
@@ -10,9 +10,9 @@ type ActiveRoute = 'feed' | 'explore' | 'notifications' | 'messages' | 'profile'
 
 const navItems = [
   { key: 'feed', labelKey: 'nav.home', to: '/feed', icon: Home },
-  { key: 'explore', labelKey: 'nav.explore', to: '/explore', icon: Search },
-  { key: 'notifications', labelKey: 'nav.notifications', to: '/notifications', icon: Bell },
-  { key: 'messages', labelKey: 'nav.messages', to: '/messages', icon: Mail },
+  // { key: 'explore', labelKey: 'nav.explore', to: '/explore', icon: Search },
+  // { key: 'notifications', labelKey: 'nav.notifications', to: '/notifications', icon: Bell },
+  // { key: 'messages', labelKey: 'nav.messages', to: '/messages', icon: Mail },
   { key: 'profile', labelKey: 'nav.profile', to: '/profile', icon: User },
 ] as const;
 
