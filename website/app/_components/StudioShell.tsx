@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Home, Images, LogOut, PenLine, Search, Settings } from 'lucide-react';
+import { Clapperboard, Home, PenLine, Search, Settings } from 'lucide-react';
 import { getInitials } from '@/app/_components/AppShell';
+import { PreferenceDropdown } from '@/app/_components/PreferenceDropdown';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
 type ActiveRoute = 'media';
 
 const navItems = [
-  { key: 'media', labelKey: 'nav.media', to: '/studio/media', icon: Images },
+  { key: 'media', labelKey: 'nav.media', to: '/studio', icon: Clapperboard },
 ] as const;
 
 const pageTitleKeys: Record<ActiveRoute, string> = {
@@ -18,7 +19,7 @@ const pageTitleKeys: Record<ActiveRoute, string> = {
 };
 
 export function StudioShell({ active, children }: { active: ActiveRoute; children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { t } = usePreferences();
   const displayName = user?.name || user?.username || user?.email || 'Welcome';
   const username = user?.username || 'you';
@@ -27,7 +28,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
   return (
     <main className="studio-shell">
       <aside className="studio-sidebar">
-        <Link className="studio-brand" href="/studio/media" aria-label="Romlek Studio">
+        <Link className="studio-brand" href="/studio" aria-label="Romlek Studio">
           R
         </Link>
 
@@ -52,14 +53,14 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
           <span>{t('nav.post')}</span>
         </Button>
 
-        <button className="studio-account" type="button" onClick={() => void logout()}>
+        <Link className="studio-account" href="/profile" aria-label={t('nav.profile')}>
           <span className="mini-avatar studio-account-avatar">{initials}</span>
           <span>
             <strong>{displayName}</strong>
             <small>@{username}</small>
           </span>
-          <LogOut size={17} aria-hidden="true" />
-        </button>
+          <Settings size={17} aria-hidden="true" />
+        </Link>
       </aside>
 
       <section className="studio-workspace">
@@ -70,6 +71,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
           </div>
           <div className="studio-topbar-actions">
             <div className="studio-search"><Search size={17} aria-hidden="true" /> {t('nav.search')}</div>
+            <PreferenceDropdown className="studio-preference-button" />
             <Button className="studio-settings" type="text" shape="circle" aria-label={t('profile.settings')} href="/profile"><Settings size={18} aria-hidden="true" /></Button>
           </div>
         </header>

@@ -208,13 +208,6 @@ export default function StudioMediaPage() {
   return (
     <StudioShell active="media">
       <section className="studio-media-page">
-        <header className="studio-media-header">
-          <div>
-            <span className="studio-label">Romlek Studio</span>
-            <h1>{t('media.title')}</h1>
-            <p>{t('media.subtitle')}</p>
-          </div>
-        </header>
 
         <section className="studio-media-upload" aria-label={t('media.uploadTitle')}>
           <div className="studio-upload-copy">
@@ -264,7 +257,6 @@ export default function StudioMediaPage() {
               </div>
               <small>{isPublicUpload ? t('media.publicUploadBody') : t('media.privateUploadBody')}</small>
             </div>
-            {uploaderId ? <p>{t('media.uploadedBy', { id: uploaderId })}</p> : <p className="error">{t('media.uploadRequiresUploader')}</p>}
           </div>
           <div className="studio-upload-actions">
             <button type="button" className="studio-upload-clear" onClick={clearSelectedFiles} disabled={!selectedFiles.length || isUploading} aria-label={t('media.clearFiles')}>

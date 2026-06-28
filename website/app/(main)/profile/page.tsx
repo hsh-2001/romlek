@@ -1,17 +1,20 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Segmented } from 'antd';
-import { AtSign, CalendarDays, FileText, Image, Mail, MapPin, Palette, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
+import { AtSign, CalendarDays, FileText, Image, LogOut, Mail, MapPin, Palette, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const { t } = usePreferences();
   const [activeProfileTab, setActiveProfileTab] = useState('posts');
+  const [logoutPending, setLogoutPending] = useState(false);
   const profileTabOptions = useMemo(
     () => [
       { label: t('profile.posts'), value: 'posts' },
@@ -39,6 +42,12 @@ export default function ProfilePage() {
     { icon: Sparkles, title: t('profile.activityPost'), body: t('profile.activityPostBody') },
     { icon: MapPin, title: t('profile.activityReply'), body: t('profile.activityReplyBody') },
   ];
+
+  const signOut = async () => {
+    setLogoutPending(true);
+    await logout();
+    router.push('/login');
+  };
 
   return (
     <AppShell active="profile">
@@ -119,6 +128,10 @@ export default function ProfilePage() {
                   );
                 })}
               </div>
+              <Button className="profile-logout-button" danger loading={logoutPending} onClick={() => void signOut()}>
+                <LogOut size={17} aria-hidden="true" />
+                <span>{t('nav.signOut')}</span>
+              </Button>
             </article>
 
             <article className="profile-card">

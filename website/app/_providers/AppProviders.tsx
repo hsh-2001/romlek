@@ -45,6 +45,7 @@ const messages: Record<Locale, Messages> = { en, km };
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 const oneYearInSeconds = 60 * 60 * 24 * 365;
 const thirtyDaysInSeconds = 60 * 60 * 24 * 30;
+const authUserStorageKey = 'romlek_auth_user';
 const supportedLocales = ['en', 'km'] satisfies Locale[];
 const supportedThemes = ['light', 'dark'] satisfies ThemeMode[];
 
@@ -75,6 +76,58 @@ const setCookie = (name: string, value: string, maxAge: number) => {
 
 const clearCookie = (name: string) => {
   document.cookie = `${name}=; path=/; max-age=0; samesite=lax`;
+};
+
+const getStoredUser = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const storedUser = window.localStorage.getItem(authUserStorageKey);
+    if (!storedUser) {
+      return null;
+    }
+
+    const parsedUser = JSON.parse(storedUser) as unknown;
+    return parsedUser && typeof parsedUser === 'object' && 'id' in parsedUser ? (parsedUser as AuthUser) : null;
+  } catch {
+    window.localStorage.removeItem(authUserStorageKey);
+    return null;
+  }
+};
+
+const storeUser = (user: AuthUser | null) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (!user) {
+    window.localStorage.removeItem(authUserStorageKey);
+    return;
+  }
+
+  const { password: _password, token: _token, access_token: _accessToken, ...safeUser } = user;
+  window.localStorage.setItem(authUserStorageKey, JSON.stringify(safeUser));
+};
+
+const base64UrlDecode = (value: string) => {
+  const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddedValue = normalizedValue.padEnd(Math.ceil(normalizedValue.length / 4) * 4, '=');
+  return atob(paddedValue);
+};
+
+const extractUserFromToken = (token: string): AuthUser | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(base64UrlDecode(token.split('.')[1] || '')) as unknown;
+    return payload && typeof payload === 'object' && 'id' in payload ? (payload as AuthUser) : null;
+  } catch {
+    return null;
+  }
 };
 
 const getMessageValue = (locale: Locale, key: string) => {
@@ -145,6 +198,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     const storedLocale = getCookie('romlek_locale');
     const storedTheme = getCookie('romlek_theme');
     const storedToken = getCookie('auth_token');
+    const storedUser = getStoredUser();
 
     if (isLocale(storedLocale)) {
       setLocaleState(storedLocale);
@@ -156,6 +210,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
     if (storedToken) {
       setTokenState(storedToken);
+      setUser(storedUser || extractUserFromToken(storedToken));
+    } else {
+      storeUser(null);
     }
   }, []);
 
@@ -199,6 +256,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             clearCookie('auth_token');
             setTokenState(null);
             setUser(null);
+            storeUser(null);
 
             if (window.location.pathname !== '/login') {
               window.location.href = '/login';
@@ -225,6 +283,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
     if (nextUser) {
       setUser(nextUser);
+      storeUser(nextUser);
     }
   }, []);
 
@@ -232,12 +291,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     const currentToken = token || getCookie('auth_token');
     if (!currentToken) {
       setUser(null);
+      storeUser(null);
       return null;
     }
 
     const payload = await api<AuthPayload>('/auth/me');
     const nextUser = extractUser(payload);
     setUser(nextUser);
+    storeUser(nextUser);
     return nextUser;
   }, [api, token]);
 
@@ -281,6 +342,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     clearCookie('auth_token');
     setTokenState(null);
     setUser(null);
+    storeUser(null);
     window.location.href = '/login';
   }, [api, token]);
 

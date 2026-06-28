@@ -2,17 +2,16 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Home, PenLine, User } from 'lucide-react';
+import { Clapperboard, Home, User } from 'lucide-react';
+import { PreferenceDropdown } from '@/app/_components/PreferenceDropdown';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
-type ActiveRoute = 'feed' | 'explore' | 'notifications' | 'messages' | 'profile';
+type ActiveRoute = 'feed' | 'explore' | 'notifications' | 'messages' | 'profile' | 'studio';
 
 const navItems = [
   { key: 'feed', labelKey: 'nav.home', to: '/feed', icon: Home },
-  // { key: 'explore', labelKey: 'nav.explore', to: '/explore', icon: Search },
-  // { key: 'notifications', labelKey: 'nav.notifications', to: '/notifications', icon: Bell },
-  // { key: 'messages', labelKey: 'nav.messages', to: '/messages', icon: Mail },
+  { key: 'studio', labelKey: 'nav.media', to: '/studio', icon: Clapperboard },
   { key: 'profile', labelKey: 'nav.profile', to: '/profile', icon: User },
 ] as const;
 
@@ -28,7 +27,7 @@ const getInitials = (value: string) => {
 };
 
 export function AppShell({ active, children }: { active: ActiveRoute; children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { t } = usePreferences();
   const displayName = user?.name || user?.username || user?.email || 'Welcome';
   const initials = getInitials(displayName);
@@ -66,24 +65,22 @@ export function AppShell({ active, children }: { active: ActiveRoute; children: 
           })}
         </nav>
 
-        <Button className="home-post-button" type="primary" aria-label={t('nav.post')}>
-          <PenLine size={22} aria-hidden="true" />
-          <span>{t('nav.post')}</span>
-        </Button>
-
-        <Button className="account-switcher dark:!text-slate-100 dark:hover:!bg-slate-900" type="text" onClick={() => void logout()}>
+        <Link className="account-switcher dark:!text-slate-100 dark:hover:!bg-slate-900" href="/profile" aria-label={t('nav.profile')}>
           <span className="mini-avatar">{initials}</span>
           <span>
             <strong>{displayName}</strong>
-            <small>{t('nav.signOut')}</small>
+            <small>{t('nav.profile')}</small>
           </span>
-        </Button>
+        </Link>
       </aside>
 
       <section className="timeline dark:!border-slate-800">{children}</section>
 
       <aside className="home-aside">
-        <div className="search-box dark:!bg-slate-900 dark:!text-slate-400">{t('nav.search')}</div>
+        <div className="home-aside-header">
+          <div className="search-box dark:!bg-slate-900 dark:!text-slate-400">{t('nav.search')}</div>
+          <PreferenceDropdown className="home-preference-button" />
+        </div>
 
         <section className="aside-panel dark:!bg-slate-900">
           <h2>{t('aside.happening')}</h2>
