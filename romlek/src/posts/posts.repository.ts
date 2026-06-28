@@ -55,7 +55,8 @@ export class PostsRepository {
               'storage_provider', m.storage_provider,
               'uploaded_by', m.uploaded_by,
               'is_public', m.is_public,
-              'caption', pm.caption,
+              'caption', COALESCE(posting_details.caption, pm.caption),
+              'location', posting_details.location,
               'sort_order', pm.sort_order,
               'created_at', m.created_at,
               'updated_at', m.updated_at
@@ -68,6 +69,7 @@ export class PostsRepository {
       LEFT JOIN users u ON u.id = p.user_id
       LEFT JOIN post_media pm ON pm.post_id = p.id
       LEFT JOIN media m ON m.id = pm.media_id
+      LEFT JOIN media_posting_details posting_details ON posting_details.media_id = m.id
         ${options.publicOnly ? 'AND m.is_public = TRUE' : ''}
       GROUP BY p.id, u.id
       ${options.publicOnly ? 'HAVING COUNT(m.id) > 0' : ''}

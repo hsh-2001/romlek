@@ -59,13 +59,22 @@ export class UploadService {
       throw new BadRequestException('Uploaded file must have a filename');
     }
 
-    const filename = generateFilename(originalFilename);
-    const key = path ? `${path}/${filename}` : filename;
     const uploadedBy = this.normalizeUploaderId(options.uploadedBy);
+    const isPublic = parseBoolean(options.isPublic);
+    const location = options.location?.trim() || '';
+    const caption = options.caption?.trim() || '';
 
     if (!uploadedBy) {
       throw new BadRequestException('Uploader id is required');
     }
+
+    if (isPublic && (!location || !caption)) {
+      throw new BadRequestException('Location and caption are required for posting media');
+    }
+
+    const filename = generateFilename(originalFilename);
+    const userUploadPath = this.getUserUploadPath(uploadedBy, path);
+    const key = userUploadPath ? `${userUploadPath}/${filename}` : filename;
 
     try {
       await this.storage.putObject(key, file.buffer, file.mimetype);
@@ -84,9 +93,16 @@ export class UploadService {
           duration: null,
           storage_provider: 'r2',
           uploaded_by: uploadedBy,
-          is_public: parseBoolean(options.isPublic),
+          is_public: isPublic,
         }),
       );
+      const postingDetails =
+        isPublic && media?.id
+          ? await this.uploadRepository.upsertPostingDetails(media.id, {
+              location,
+              caption,
+            })
+          : null;
 
       return {
         originalFilename,
@@ -96,7 +112,9 @@ export class UploadService {
         hlsUrl,
         contentType: file.mimetype,
         size: file.size,
-        media: hlsUrl ? { ...media, hls_url: hlsUrl } : media,
+        media: hlsUrl
+          ? { ...media, ...postingDetails, hls_url: hlsUrl }
+          : { ...media, ...postingDetails },
       };
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -140,6 +158,11 @@ export class UploadService {
     return String(uploadedBy).trim() || null;
   }
 
+  private getUserUploadPath(uploadedBy: string, path: string) {
+    const userFolder = encodeURIComponent(uploadedBy);
+    return normalizeUploadPath(['users', userFolder, path].filter(Boolean).join('/'));
+  }
+
   async findAll(
     options: { publicOnly?: string | boolean; uploadedBy?: string } = {},
   ) {
@@ -176,5 +199,35 @@ export class UploadService {
       console.error('Error deleting upload:', error);
       throw new InternalServerErrorException('Error deleting upload');
     }
+  }
+
+  async updatePostingDetails(id: string, details: { location?: string; caption?: string }) {
+    const upload = await this.uploadRepository.findById(id);
+    if (!upload) {
+      throw new NotFoundException('Upload not found');
+    }
+
+    if (!parseBoolean(upload.is_public)) {
+      throw new BadRequestException('Posting details can only be edited for media marked for posting');
+    }
+
+    const location = details.location?.trim() || '';
+    const caption = details.caption?.trim() || '';
+    if (!location || !caption) {
+      throw new BadRequestException('Location and caption are required');
+    }
+
+    const postingDetails = await this.uploadRepository.upsertPostingDetails(id, {
+      location,
+      caption,
+    });
+
+    return {
+      message: 'Posting details updated successfully',
+      media: {
+        ...upload,
+        ...postingDetails,
+      },
+    };
   }
 }

@@ -22,6 +22,7 @@ const migrationOrder = new Map([
   ['media_upload_metadata.sql', 5],
   ['posts.sql', 6],
   ['post_media.sql', 7],
+  ['media_posting_details.sql', 8],
 ]);
 
 async function runMigrations() {

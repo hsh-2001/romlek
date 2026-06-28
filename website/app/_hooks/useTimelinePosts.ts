@@ -12,6 +12,8 @@ export type TimelineMedia = {
   url: string;
   hlsUrl?: string;
   alt: string;
+  caption?: string;
+  location?: string;
   poster?: string;
   uploadedBy?: string;
   isPublic?: boolean;
@@ -24,6 +26,7 @@ export type TimelinePost = {
   username: string;
   time: string;
   body: string;
+  location?: string;
   media: TimelineMedia[];
 };
 
@@ -163,6 +166,8 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
 
   const initialUrl = resolveMediaUrl(resolvedRawUrl);
   const alt = firstString(media.alt, media.caption, media.original_name, media.originalName, media.file_name, media.fileName) || 'Post media';
+  const caption = firstString(media.caption, media.description, media.body, media.content);
+  const location = firstString(media.location, media.place, media.store, media.branch, media.address);
   const kind = inferMediaKind(media, initialUrl, key);
   const url = key ? resolveMediaUrl(`/upload/render?key=${encodeURIComponent(key)}`) : initialUrl;
   const rawHlsUrl = firstString(media.hls_url, media.hlsUrl) || (key ? `/upload/hls/playlist?key=${encodeURIComponent(key)}` : '');
@@ -178,6 +183,8 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
     url,
     hlsUrl,
     alt,
+    caption: caption || undefined,
+    location: location || undefined,
     poster: firstString(media.poster, media.thumbnail_url, media.thumbnailUrl) || undefined,
     uploadedBy: firstString(media.uploaded_by, media.uploadedBy, media.uploader_id, media.uploaderId) || undefined,
     isPublic: firstBoolean(media.is_public, media.isPublic),
@@ -217,6 +224,7 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
   const name = firstString(author.name, author.display_name, author.displayName, post.name, post.author_name, post.authorName) || 'Romlek';
   const username = firstString(author.username, post.username, post.author_username, post.authorUsername) || 'romlek';
   const body = firstString(post.body, post.content, post.text, post.caption, post.description);
+  const location = firstString(post.location, post.place, post.store, post.branch, post.address);
   const createdAt = firstString(post.created_at, post.createdAt, post.updated_at, post.updatedAt);
   const id = firstString(post.id, post.post_id, post.postId) || firstNumber(post.id, post.post_id, post.postId) || `api-post-${index}`;
 
@@ -227,6 +235,7 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
     username,
     time: createdAt ? formatRelativeTime(createdAt) : firstString(post.time) || 'now',
     body,
+    location: location || undefined,
     media: getMediaItems(post, options),
   };
 };
@@ -238,14 +247,21 @@ const normalizeUploadAsPost = (media: ApiRecord, index: number, options: Timelin
   }
 
   const createdAt = firstString(media.created_at, media.createdAt, media.updated_at, media.updatedAt);
+  const caption = firstString(media.caption, media.description, media.body, media.content, media.original_name, media.originalName);
+  const location = firstString(media.location, media.place, media.store, media.branch, media.address);
+  const username =
+    firstString(media.uploader_username, media.uploaderUsername, media.username, media.author_username, media.authorUsername) ||
+    (normalizedMedia.uploadedBy ? `user-${normalizedMedia.uploadedBy}` : 'romlek');
+  const name = firstString(media.uploader_name, media.uploaderName, media.name, media.author_name, media.authorName) || username;
 
   return {
     id: firstString(media.id, media.file_path, media.key) || firstNumber(media.id) || `upload-${index}`,
-    initials: 'R',
-    name: 'Romlek',
-    username: 'romlek',
+    initials: getInitials(name),
+    name,
+    username,
     time: createdAt ? formatRelativeTime(createdAt) : 'now',
-    body: firstString(media.caption, media.description, media.original_name, media.originalName),
+    body: caption,
+    location: location || normalizedMedia.location,
     media: [normalizedMedia],
   };
 };

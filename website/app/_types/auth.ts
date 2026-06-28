@@ -14,7 +14,9 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials {
   name: string;
+  username: string;
   email: string;
+  phone: string;
   password: string;
   password_confirmation?: string;
 }

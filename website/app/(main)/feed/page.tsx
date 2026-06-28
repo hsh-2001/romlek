@@ -1,32 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Button, Input } from 'antd';
-import { Bookmark, Heart, ImagePlus, MessageCircle, Send, Sparkles } from 'lucide-react';
+import { Button } from 'antd';
+import { Bookmark, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
-import { redirect } from 'next/dist/client/components/redirect';
-import { useRouter } from 'next/dist/client/components/navigation';
 
 export default function FeedPage() {
   const { user } = useAuth();
-  const router = useRouter();
   const { t } = usePreferences();
-  const [composer, setComposer] = useState('');
-  const [activeFeedTab, setActiveFeedTab] = useState('for-you');
   const apiPosts = useTimelinePosts(0, { publicOnly: true });
   const displayName = user?.name || user?.username || user?.email || 'Welcome';
   const initials = getInitials(displayName);
-  const feedTabOptions = useMemo(
-    () => [
-      { label: t('feed.latest'), value: 'for-you' },
-      { label: t('feed.circle'), value: 'following' },
-    ],
-    [t],
-  );
 
   const fallbackPosts: TimelinePost[] = [
     { id: 'fallback-1', initials, name: displayName, username: user?.username || 'you', time: 'now', body: t('feed.firstPost'), media: [] },
@@ -44,40 +31,18 @@ export default function FeedPage() {
         </div>
       </header>
 
-      <section className="feed-controls" aria-label="Feed filters">
-        <div className="feed-tabs" role="tablist" aria-label="Feed filters">
-          {feedTabOptions.map((option) => (
-            <button key={option.value} type="button" role="tab" aria-selected={activeFeedTab === option.value} className={activeFeedTab === option.value ? 'active' : ''} onClick={() => setActiveFeedTab(option.value)}>
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="feed-composer">
-        <div className="mini-avatar feed-avatar">{initials}</div>
-        <div className="composer-body">
-          <Input.TextArea className="composer-input" value={composer} autoSize={{ minRows: 3, maxRows: 6 }} placeholder={t('feed.composer')} onChange={(event) => setComposer(event.target.value)} />
-          <div className="composer-actions">
-            <Button onClick={() => {
-              router.push('/studio');
-            }} type="text" className="composer-tool" aria-label={t('feed.addMedia')}><ImagePlus size={18} aria-hidden="true" /> {t('feed.addMedia')}</Button>
-            <Button className="home-post-small" shape="round" type="primary">
-              <Send size={16} aria-hidden="true" />
-              {t('nav.post')}
-            </Button>
-          </div>
-        </div>
-      </section>
-
       <section className="feed-list" aria-label={t('feed.title')}>
         {posts.map((post) => (
           <article key={post.id} className="feed-card">
             <div className="feed-card-header">
               <div className="mini-avatar feed-avatar">{post.initials}</div>
               <div className="feed-author">
-                <strong>{post.name}</strong>
-                <span>@{post.username} · {post.time}</span>
+                <div className="feed-author-line">
+                  <strong>{post.name}</strong>
+                  <span>@{post.username}</span>
+                  <span>{post.time}</span>
+                </div>
+                {post.location ? <small className="feed-location"><MapPin size={13} aria-hidden="true" /> {post.location}</small> : null}
               </div>
               <Button type="text" shape="circle" className="save-button" aria-label={t('feed.save')}><Bookmark size={18} aria-hidden="true" /></Button>
             </div>

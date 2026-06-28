@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from 'antd';
 import {
   File,
@@ -11,10 +11,14 @@ import {
   FileSpreadsheet,
   FileText,
   FileType,
+  Pencil,
   Globe2,
   Image as ImageIcon,
   Lock,
+  MapPin,
+  MessageSquareText,
   Presentation,
+  Check,
   Trash2,
   UploadCloud,
   Video,
@@ -79,17 +83,28 @@ const formatFileSize = (size: number) => {
 export default function StudioMediaPage() {
   const { api, user } = useAuth();
   const { t } = usePreferences();
+  const [modal, modalContextHolder] = Modal.useModal();
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeFilter, setActiveFilter] = useState<MediaFilter>('all');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isPublicUpload, setIsPublicUpload] = useState(false);
+  const [postLocation, setPostLocation] = useState('');
+  const [postCaption, setPostCaption] = useState('');
+  const [editingMedia, setEditingMedia] = useState<TimelineMedia | null>(null);
+  const [editLocation, setEditLocation] = useState('');
+  const [editCaption, setEditCaption] = useState('');
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [deletingMediaId, setDeletingMediaId] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
+  const uploadWasCanceledRef = useRef(false);
   const uploaderId = user?.id !== undefined && user?.id !== null ? String(user.id) : '';
   const posts = useTimelinePosts(refreshKey, { uploadedBy: uploaderId || '__missing_user__' });
   const mediaItems = useMemo(
@@ -105,7 +120,17 @@ export default function StudioMediaPage() {
     [posts],
   );
   const filteredMedia = mediaItems.filter((media) => activeFilter === 'all' || media.kind === activeFilter);
-  const canUpload = selectedFiles.length > 0 && Boolean(uploaderId) && !isUploading;
+  const filteredMediaIds = filteredMedia.map((media) => media.id);
+  const selectedMedia = mediaItems.filter((media) => selectedMediaIds.includes(media.id));
+  const selectedVisibleCount = filteredMediaIds.filter((id) => selectedMediaIds.includes(id)).length;
+  const hasSelectedMedia = selectedMediaIds.length > 0;
+  const allVisibleSelected = filteredMediaIds.length > 0 && selectedVisibleCount === filteredMediaIds.length;
+  const hasPostDetails = postLocation.trim().length > 0 && postCaption.trim().length > 0;
+  const canUpload = selectedFiles.length > 0 && Boolean(uploaderId) && !isUploading && (!isPublicUpload || hasPostDetails);
+
+  useEffect(() => {
+    setSelectedMediaIds((currentIds) => currentIds.filter((id) => mediaItems.some((media) => media.id === id)));
+  }, [mediaItems]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSelectedFiles(Array.from(event.target.files ?? []));
@@ -126,6 +151,19 @@ export default function StudioMediaPage() {
     }
   };
 
+  const toggleMediaSelection = (mediaId: string) => {
+    setSelectedMediaIds((currentIds) => (currentIds.includes(mediaId) ? currentIds.filter((id) => id !== mediaId) : [...currentIds, mediaId]));
+  };
+
+  const selectVisibleMedia = () => {
+    setSelectedMediaIds((currentIds) => Array.from(new Set([...currentIds, ...filteredMediaIds])));
+  };
+
+  const clearMediaSelection = () => {
+    setSelectedMediaIds([]);
+    setIsSelectionMode(false);
+  };
+
   const handleUpload = async () => {
     if (!selectedFiles.length) {
       return;
@@ -136,22 +174,34 @@ export default function StudioMediaPage() {
       return;
     }
 
+    if (isPublicUpload && !hasPostDetails) {
+      setUploadError(t('media.postDetailsRequired'));
+      return;
+    }
+
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append('files', file));
     formData.append('path', 'media');
     formData.append('is_public', String(isPublicUpload));
     formData.append('uploaded_by', uploaderId);
+    if (isPublicUpload) {
+      formData.append('location', postLocation.trim());
+      formData.append('caption', postCaption.trim());
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
     setUploadPhase('uploading');
     setUploadMessage('');
     setUploadError('');
+    uploadWasCanceledRef.current = false;
+    uploadAbortControllerRef.current = new AbortController();
 
     try {
       await api('/upload', {
         method: 'POST',
         body: formData,
+        signal: uploadAbortControllerRef.current.signal,
         onUploadProgress: (event) => {
           if (!event.total) {
             return;
@@ -167,23 +217,42 @@ export default function StudioMediaPage() {
       setUploadPhase('complete');
       setUploadProgress(100);
       clearSelectedFiles();
-      setUploadMessage(t('media.uploadSuccess'));
+      setPostLocation('');
+      setPostCaption('');
       setRefreshKey((value) => value + 1);
     } catch (error) {
       setUploadPhase('idle');
+      if (uploadWasCanceledRef.current) {
+        setUploadProgress(0);
+        return;
+      }
+
       setUploadError(error instanceof Error ? error.message : t('media.uploadError'));
     } finally {
       setIsUploading(false);
+      uploadAbortControllerRef.current = null;
+      uploadWasCanceledRef.current = false;
     }
   };
 
+  const cancelUpload = () => {
+    uploadWasCanceledRef.current = true;
+    uploadAbortControllerRef.current?.abort();
+    setIsUploading(false);
+    setUploadPhase('idle');
+    setUploadProgress(0);
+    setUploadError('');
+    setUploadMessage('');
+  };
+
   const handleDelete = (media: TimelineMedia) => {
-    Modal.confirm({
+    modal.confirm({
       title: t('media.deleteTitle'),
       content: t('media.deleteBody').replace('{name}', media.alt),
       okText: t('media.deleteConfirm'),
       cancelText: t('media.deleteCancel'),
       okButtonProps: { danger: true },
+      rootClassName: 'romlek-confirm-modal',
       onOk: async () => {
         setDeletingMediaId(media.id);
         setUploadMessage('');
@@ -205,8 +274,119 @@ export default function StudioMediaPage() {
     });
   };
 
+  const handleBatchDelete = () => {
+    if (!selectedMedia.length) {
+      return;
+    }
+
+    const selectedCount = selectedMedia.length;
+    modal.confirm({
+      title: t('media.batchDeleteTitle').replace('{count}', String(selectedCount)),
+      content: t('media.batchDeleteBody').replace('{count}', String(selectedCount)),
+      okText: t('media.deleteConfirm'),
+      cancelText: t('media.deleteCancel'),
+      okButtonProps: { danger: true },
+      rootClassName: 'romlek-confirm-modal',
+      onOk: async () => {
+        setDeletingMediaId('__batch__');
+        setUploadMessage('');
+        setUploadError('');
+
+        try {
+          await Promise.all(
+            selectedMedia.map((media) =>
+              api(`/upload/${encodeURIComponent(media.id)}`, {
+                method: 'DELETE',
+              }),
+            ),
+          );
+          clearMediaSelection();
+          setUploadMessage(t('media.batchDeleteSuccess').replace('{count}', String(selectedCount)));
+          setRefreshKey((value) => value + 1);
+        } catch (error) {
+          setUploadError(error instanceof Error ? error.message : t('media.deleteError'));
+          throw error;
+        } finally {
+          setDeletingMediaId('');
+        }
+      },
+    });
+  };
+
+  const openPostingDetailsEditor = (media: TimelineMedia) => {
+    setEditingMedia(media);
+    setEditLocation(media.location || '');
+    setEditCaption(media.caption || '');
+    setUploadError('');
+    setUploadMessage('');
+  };
+
+  const savePostingDetails = async () => {
+    if (!editingMedia) {
+      return;
+    }
+
+    const location = editLocation.trim();
+    const caption = editCaption.trim();
+    if (!location || !caption) {
+      setUploadError(t('media.postDetailsRequired'));
+      return;
+    }
+
+    setIsSavingDetails(true);
+    setUploadError('');
+    setUploadMessage('');
+
+    try {
+      await api(`/upload/${encodeURIComponent(editingMedia.id)}/posting-details`, {
+        method: 'PATCH',
+        body: { location, caption },
+      });
+      setEditingMedia(null);
+      setUploadMessage(t('media.postDetailsUpdated'));
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : t('media.postDetailsUpdateError'));
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+
   return (
     <StudioShell active="media">
+      {modalContextHolder}
+      <Modal
+        className="romlek-edit-posting-modal"
+        title={t('media.editPostingDetails')}
+        open={Boolean(editingMedia)}
+        okText={t('media.savePostingDetails')}
+        cancelText={t('media.deleteCancel')}
+        confirmLoading={isSavingDetails}
+        onOk={() => void savePostingDetails()}
+        onCancel={() => setEditingMedia(null)}
+      >
+        <div className="studio-post-details modal-fields">
+          <label>
+            <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
+            <input
+              value={editLocation}
+              disabled={isSavingDetails}
+              placeholder={t('media.locationPlaceholder')}
+              onChange={(event) => setEditLocation(event.target.value)}
+            />
+          </label>
+          <label>
+            <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
+            <textarea
+              value={editCaption}
+              disabled={isSavingDetails}
+              placeholder={t('media.captionPlaceholder')}
+              rows={3}
+              onChange={(event) => setEditCaption(event.target.value)}
+            />
+          </label>
+        </div>
+      </Modal>
       <section className="studio-media-page">
 
         <section className="studio-media-upload" aria-label={t('media.uploadTitle')}>
@@ -218,7 +398,7 @@ export default function StudioMediaPage() {
             </div>
           </div>
           <label className="studio-upload-dropzone">
-            <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} />
+            <input ref={fileInputRef} type="file" multiple disabled={isUploading} onChange={handleFileChange} />
             <span>{t('media.chooseFiles')}</span>
             <small>{selectedFiles.length ? t('media.filesSelected').replace('{count}', String(selectedFiles.length)) : t('media.noFilesSelected')}</small>
           </label>
@@ -243,7 +423,7 @@ export default function StudioMediaPage() {
                   onClick={() => setIsPublicUpload(false)}
                 >
                   <Lock size={16} aria-hidden="true" />
-                  {t('media.privateLabel')}
+                  {t('media.libraryOnlyLabel')}
                 </button>
                 <button
                   type="button"
@@ -252,40 +432,69 @@ export default function StudioMediaPage() {
                   onClick={() => setIsPublicUpload(true)}
                 >
                   <Globe2 size={16} aria-hidden="true" />
-                  {t('media.publicLabel')}
+                  {t('media.forPostingLabel')}
                 </button>
               </div>
-              <small>{isPublicUpload ? t('media.publicUploadBody') : t('media.privateUploadBody')}</small>
+              <small>{isPublicUpload ? t('media.forPostingBody') : t('media.libraryOnlyBody')}</small>
             </div>
-          </div>
-          <div className="studio-upload-actions">
-            <button type="button" className="studio-upload-clear" onClick={clearSelectedFiles} disabled={!selectedFiles.length || isUploading} aria-label={t('media.clearFiles')}>
-              <X size={17} aria-hidden="true" />
-              {t('media.clearFiles')}
-            </button>
-            <button type="button" className="studio-upload-submit" onClick={handleUpload} disabled={!canUpload}>
-              <UploadCloud size={17} aria-hidden="true" />
-              {isUploading ? t('media.uploading') : t('media.upload')}
-            </button>
+            {isPublicUpload ? (
+              <div className="studio-post-details">
+                <label>
+                  <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
+                  <input
+                    value={postLocation}
+                    disabled={isUploading}
+                    placeholder={t('media.locationPlaceholder')}
+                    onChange={(event) => setPostLocation(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
+                  <textarea
+                    value={postCaption}
+                    disabled={isUploading}
+                    placeholder={t('media.captionPlaceholder')}
+                    rows={3}
+                    onChange={(event) => setPostCaption(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
           {isUploading ? (
-            <div
-              className={`studio-upload-progress ${uploadPhase === 'processing' ? 'processing' : ''}`}
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={uploadPhase === 'processing' ? undefined : uploadProgress}
-            >
-              <span>
-                <small>{uploadPhase === 'processing' ? t('media.processingUpload') : t('media.uploadingFiles')}</small>
-                <strong>{uploadPhase === 'processing' ? t('media.processing') : `${uploadProgress}%`}</strong>
-              </span>
-              <div>
-                <i style={{ width: uploadPhase === 'processing' ? '100%' : `${uploadProgress}%` }} />
+            <div className="studio-upload-progress-card">
+              <div
+                className={`studio-upload-progress ${uploadPhase === 'processing' ? 'processing' : ''}`}
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={uploadPhase === 'processing' ? undefined : uploadProgress}
+              >
+                <span>
+                  <small>{uploadPhase === 'processing' ? t('media.processingUpload') : t('media.uploadingFiles')}</small>
+                  <strong>{uploadPhase === 'processing' ? t('media.processing') : `${uploadProgress}%`}</strong>
+                </span>
+                <div>
+                  <i style={{ width: uploadPhase === 'processing' ? '100%' : `${uploadProgress}%` }} />
+                </div>
               </div>
+              <button type="button" className="studio-upload-cancel" onClick={cancelUpload}>
+                <X size={17} aria-hidden="true" />
+                {t('media.deleteCancel')}
+              </button>
             </div>
-          ) : null}
-          {uploadMessage ? <p className="studio-upload-status success">{uploadMessage}</p> : null}
+          ) : (
+            <div className="studio-upload-actions">
+              <button type="button" className="studio-upload-clear" onClick={clearSelectedFiles} disabled={!selectedFiles.length} aria-label={t('media.clearFiles')}>
+                <X size={17} aria-hidden="true" />
+                {t('media.clearFiles')}
+              </button>
+              <button type="button" className="studio-upload-submit" onClick={handleUpload} disabled={!canUpload}>
+                <UploadCloud size={17} aria-hidden="true" />
+                {t('media.upload')}
+              </button>
+            </div>
+          )}
           {uploadError ? <p className="studio-upload-status error">{uploadError}</p> : null}
         </section>
 
@@ -305,11 +514,52 @@ export default function StudioMediaPage() {
         </div>
 
         {filteredMedia.length ? (
+          <div className={`studio-media-batchbar ${isSelectionMode ? 'active' : 'idle'}`} aria-label={t('media.selectionLabel')}>
+            {isSelectionMode ? (
+              <>
+                <span>{t('media.selectedCount').replace('{count}', String(selectedMediaIds.length))}</span>
+                <div>
+                  <button type="button" onClick={selectVisibleMedia} disabled={allVisibleSelected || deletingMediaId === '__batch__'}>
+                    {t('media.selectAll')}
+                  </button>
+                  <button type="button" onClick={clearMediaSelection} disabled={deletingMediaId === '__batch__'}>
+                    {t('media.deleteCancel')}
+                  </button>
+                  <button type="button" className="danger" onClick={handleBatchDelete} disabled={!hasSelectedMedia || deletingMediaId === '__batch__'}>
+                    <Trash2 size={15} aria-hidden="true" />
+                    {t('media.deleteSelected')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="studio-media-batchbar-start">
+                <button type="button" className="primary" onClick={() => setIsSelectionMode(true)}>
+                  <Check size={15} aria-hidden="true" />
+                  {t('media.select')}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {filteredMedia.length ? (
           <section className="studio-media-grid" aria-label={t('media.title')}>
             {filteredMedia.map((media, index) => {
               const Icon = getMediaIcon(media.kind);
+              const isSelected = selectedMediaIds.includes(media.id);
               return (
-                <article key={`${media.postId}-${media.id}-${index}`} className={`studio-media-tile ${media.kind}`}>
+                <article key={`${media.postId}-${media.id}-${index}`} className={`studio-media-tile ${media.kind} ${isSelectionMode && isSelected ? 'selected' : ''}`}>
+                  {isSelectionMode ? (
+                    <button
+                      type="button"
+                      className="studio-media-select"
+                      onClick={() => toggleMediaSelection(media.id)}
+                      aria-label={t('media.selectMedia').replace('{name}', media.alt)}
+                      aria-pressed={isSelected}
+                    >
+                      {isSelected ? <Check size={15} aria-hidden="true" /> : null}
+                    </button>
+                  ) : null}
                   <div className="studio-media-preview">
                     {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
                     {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
@@ -331,20 +581,34 @@ export default function StudioMediaPage() {
                       <span><Icon size={15} aria-hidden="true" /> {t(getFilterLabelKey(media.kind))}</span>
                       <small>
                         {media.isPublic ? t('media.publicLabel') : t('media.privateLabel')}
-                        {media.uploadedBy ? ` · ${t('media.uploadedByShort').replace('{id}', media.uploadedBy)}` : ''}
                         {' · '}
                         {media.time}
                       </small>
                     </div>
-                    <button
-                      type="button"
-                      className="studio-media-delete"
-                      onClick={() => handleDelete(media)}
-                      disabled={deletingMediaId === media.id}
-                      aria-label={t('media.deleteMedia')}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
+                    {!isSelectionMode ? (
+                      <div className="studio-media-actions">
+                        {media.isPublic ? (
+                          <button
+                            type="button"
+                            className="studio-media-edit"
+                            onClick={() => openPostingDetailsEditor(media)}
+                            disabled={deletingMediaId === '__batch__'}
+                            aria-label={t('media.editPostingDetails')}
+                          >
+                            <Pencil size={15} aria-hidden="true" />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="studio-media-delete"
+                          onClick={() => handleDelete(media)}
+                          disabled={deletingMediaId === media.id || deletingMediaId === '__batch__'}
+                          aria-label={t('media.deleteMedia')}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : null}
                   </footer>
                 </article>
               );

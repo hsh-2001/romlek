@@ -2,9 +2,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --color-bg: #f8fafc;
-  --color-bg-soft: #eef2f7;
-  --color-bg-warm: #f7f2ed;
+  --color-bg: #f7fbfb;
+  --color-bg-soft: #eef7f6;
+  --color-bg-warm: #fff4e8;
   --color-surface: #ffffff;
   --color-surface-raised: rgba(255, 255, 255, 0.92);
   --color-surface-soft: #f4f7fb;
@@ -16,58 +16,57 @@
   --color-text-body: #243044;
   --color-muted: #64748b;
   --color-muted-strong: #475569;
-  --color-brand: #0f766e;
-  --color-brand-hover: #115e59;
-  --color-brand-soft: #edf7f5;
+  --color-brand: #00a884;
+  --color-brand-hover: #047c67;
+  --color-brand-soft: #e7faf5;
   --color-brand-contrast: #ffffff;
-  --color-accent: #2563eb;
-  --color-accent-warm: #ea580c;
+  --color-accent: #246bfe;
+  --color-accent-warm: #ff8a3d;
   --color-action: #111827;
   --color-action-contrast: #ffffff;
   --color-danger-bg: #fee2e2;
   --color-danger-text: #991b1b;
-  --shadow-panel: 0 18px 55px rgba(15, 23, 42, 0.1);
-  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.05);
+  --shadow-panel: 0 24px 70px rgba(15, 23, 42, 0.12);
+  --shadow-card: 0 16px 42px rgba(15, 23, 42, 0.07);
   --shadow-soft: 0 1px 4px rgba(15, 23, 42, 0.1);
+  --font-playful: "Comic Sans MS", "Comic Sans", "Comic Neue", "Chalkboard SE", "Marker Felt", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
   --romlek-primary: var(--color-brand);
   --romlek-primary-dark: var(--color-brand-hover);
   --romlek-radius: 8px;
 }
 
 html.dark {
-  --color-bg: #08111b;
-  --color-bg-soft: #101827;
-  --color-bg-warm: #16130f;
-  --color-surface: #020617;
-  --color-surface-raised: rgba(15, 23, 42, 0.9);
-  --color-surface-soft: #0f172a;
-  --color-surface-subtle: #1e293b;
-  --color-border: #1e293b;
-  --color-border-soft: #334155;
+  --color-bg: #0f172a;
+  --color-bg-soft: #111c31;
+  --color-bg-warm: #101827;
+  --color-surface: #111827;
+  --color-surface-raised: rgba(17, 24, 39, 0.94);
+  --color-surface-soft: #172033;
+  --color-surface-subtle: #202a3d;
+  --color-border: #2e3b53;
+  --color-border-soft: #34425c;
   --color-text: #f8fafc;
   --color-text-strong: #f8fafc;
-  --color-text-body: #dbe4ee;
+  --color-text-body: #d7deec;
   --color-muted: #94a3b8;
-  --color-muted-strong: #cbd5e1;
-  --color-brand: #5eead4;
+  --color-muted-strong: #b8c4d8;
+  --color-brand: #08948c;
   --color-brand-hover: #14b8a6;
-  --color-brand-soft: #0f2f2d;
-  --color-brand-contrast: #020617;
-  --color-accent: #38bdf8;
-  --color-accent-warm: #fb923c;
+  --color-brand-soft: #113f39;
+  --color-brand-contrast: #f8fafc;
+  --color-accent: #2f80ed;
+  --color-accent-warm: #6b7280;
   --color-action: #f8fafc;
   --color-action-contrast: #0f172a;
   --color-danger-bg: #450a0a;
   --color-danger-text: #fecaca;
-  --shadow-panel: 0 24px 70px rgba(0, 0, 0, 0.34);
+  --shadow-panel: 0 24px 70px rgba(0, 0, 0, 0.36);
   --shadow-card: none;
   --shadow-soft: none;
 }
 
 html.dark body {
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-brand) 22%, transparent), transparent 32rem),
-    linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-soft) 55%, var(--color-bg-warm) 100%);
+  background: var(--color-bg);
   color: var(--color-text-body);
 }
 
@@ -112,6 +111,71 @@ html.dark .suggestion-item .ant-btn {
   color: var(--color-action-contrast);
 }
 
+html.dark .ant-modal-root .ant-modal-mask {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+html.dark .ant-modal .ant-modal-content,
+html.dark .ant-modal-confirm .ant-modal-content,
+html.dark .ant-popover .ant-popover-inner,
+html.dark .ant-message .ant-message-notice-content,
+html.dark .ant-notification .ant-notification-notice {
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface-soft);
+  color: var(--color-text-body);
+  box-shadow: var(--shadow-panel);
+}
+
+html.dark .ant-modal .ant-modal-header {
+  background: transparent;
+}
+
+html.dark .ant-modal .ant-modal-title,
+html.dark .ant-modal-confirm-title,
+html.dark .ant-popconfirm-title,
+html.dark .ant-notification .ant-notification-notice-message {
+  color: var(--color-text);
+}
+
+html.dark .ant-modal .ant-modal-close,
+html.dark .ant-modal-confirm-content,
+html.dark .ant-popconfirm-description,
+html.dark .ant-notification .ant-notification-notice-description {
+  color: var(--color-muted-strong);
+}
+
+html.dark .ant-modal .ant-modal-close:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+html.dark .ant-modal .ant-btn-default,
+html.dark .ant-popconfirm .ant-btn-default {
+  border-color: var(--color-border-soft);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+html.dark .ant-modal .ant-btn-default:hover,
+html.dark .ant-popconfirm .ant-btn-default:hover {
+  border-color: var(--color-brand-hover);
+  color: var(--color-brand);
+}
+
+html.dark .ant-modal .ant-btn-primary.ant-btn-dangerous,
+html.dark .ant-popconfirm .ant-btn-primary.ant-btn-dangerous {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+html.dark .ant-modal .ant-btn-primary.ant-btn-dangerous:hover,
+html.dark .ant-popconfirm .ant-btn-primary.ant-btn-dangerous:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
 html.dark .timeline-header h1,
 html.dark .aside-panel h2,
 html.dark .tweet-body p,
@@ -124,8 +188,7 @@ html.dark .trend-item strong {
 html.dark .tweet-meta span,
 html.dark .trend-item span,
 html.dark .trend-item small,
-html.dark .suggestion-item small,
-html.dark .account-switcher small {
+html.dark .suggestion-item small {
   color: var(--color-muted);
 }
 
@@ -139,10 +202,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-brand) 14%, transparent), transparent 32rem),
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--color-brand) 18%, transparent), transparent 30rem),
+    radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--color-accent-warm) 16%, transparent), transparent 24rem),
     linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-soft) 50%, var(--color-bg-warm) 100%);
   color: var(--color-text-body);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-playful);
 }
 
 button,
@@ -154,6 +218,35 @@ input {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.romlek-confirm-modal .ant-modal-content {
+  border: 1px solid var(--color-border-soft);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  box-shadow: var(--shadow-panel);
+}
+
+.romlek-confirm-modal .ant-modal-confirm-title {
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.romlek-confirm-modal .ant-modal-confirm-content {
+  color: var(--color-muted-strong);
+  line-height: 1.55;
+}
+
+.romlek-confirm-modal .ant-btn-default {
+  border-color: var(--color-border-soft);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.romlek-confirm-modal .ant-btn-default:hover {
+  border-color: var(--color-brand-hover);
+  color: var(--color-brand);
 }
 
 .auth-shell,
@@ -246,35 +339,8 @@ a {
   justify-content: flex-end;
 }
 
-.preference-dropdown-button.ant-btn,
-.login-preference-button.ant-btn {
-  display: inline-flex;
-  height: 38px;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--color-border-soft);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
-  color: var(--color-muted-strong);
-  font-weight: 800;
-  padding: 0 12px;
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(12px);
-}
-
-.preference-dropdown-button.ant-btn:hover,
-.login-preference-button.ant-btn:hover {
-  border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border));
-  color: var(--color-text);
-}
-
-.preference-menu-label,
-.login-menu-label {
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0;
-  text-transform: uppercase;
+.login-preference-controls {
+  min-width: 168px;
 }
 
 .login-copy {
@@ -283,11 +349,26 @@ a {
 }
 
 .login-brand {
-  color: var(--color-brand);
-  font-size: clamp(44px, 6vw, 64px);
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 24%, transparent);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 80%, transparent), color-mix(in srgb, var(--color-brand-soft) 86%, transparent));
+  color: var(--color-brand-hover);
+  font-size: clamp(34px, 5vw, 52px);
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1;
+  padding: 12px 18px 12px 14px;
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--color-brand) 16%, transparent);
+}
+
+.login-brand svg {
+  flex: 0 0 auto;
+  color: var(--color-brand);
 }
 
 .login-copy h1 {
@@ -306,11 +387,39 @@ a {
   line-height: 1.5;
 }
 
+.login-proof-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.login-proof-strip span {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 18%, var(--color-border-soft));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-raised) 72%, transparent);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 0 12px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
+}
+
+.login-proof-strip svg {
+  color: var(--color-brand);
+}
+
 .login-panel {
   gap: 14px;
   border: 1px solid var(--color-border-soft);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface-raised) 96%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-raised) 98%, transparent), color-mix(in srgb, var(--color-brand-soft) 34%, var(--color-surface)));
   box-shadow: var(--shadow-panel);
   overflow: hidden;
   padding: 0 !important;
@@ -356,7 +465,7 @@ a {
 .login-panel .ant-input-affix-wrapper {
   min-height: 52px;
   border-color: var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 16px;
 }
 
@@ -369,15 +478,16 @@ a {
 .login-panel .form-submit.ant-btn {
   min-height: 50px;
   border: 0;
-  border-radius: 8px;
-  background: var(--color-brand);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
   color: var(--color-brand-contrast);
   font-size: 17px;
   font-weight: 900;
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--color-brand) 22%, transparent);
 }
 
 .login-panel .form-submit.ant-btn:hover {
-  background: var(--color-brand-hover);
+  background: linear-gradient(135deg, var(--color-brand-hover), color-mix(in srgb, var(--color-accent) 82%, #0f172a));
   color: var(--color-brand-contrast);
 }
 
@@ -400,7 +510,7 @@ a {
   align-items: center;
   justify-content: center;
   justify-self: center;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-action);
   color: var(--color-action-contrast);
   font-size: 16px;
@@ -499,40 +609,156 @@ a {
   min-height: 44px;
 }
 
-.preference-controls {
+.preference-trigger-button.ant-btn {
+  display: inline-flex;
+  width: fit-content;
   max-width: 100%;
-}
-
-.preference-field {
-  display: grid;
-  gap: 7px;
-}
-
-.preference-field > span {
-  color: var(--color-muted-strong);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.preference-select {
-  width: 100%;
-}
-
-.preference-select .ant-select-selector {
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
-  border-radius: 8px !important;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 18%, var(--color-border-soft));
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface-raised) 94%, transparent), color-mix(in srgb, var(--color-brand-soft) 34%, transparent));
+  color: var(--color-text);
+  font-weight: 900;
+  padding: 0 13px 0 10px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
+}
+
+.preference-trigger-button.ant-btn:hover,
+.preference-trigger-button.ant-btn:focus-visible {
+  border-color: color-mix(in srgb, var(--color-brand) 44%, var(--color-border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface-raised) 96%, transparent), color-mix(in srgb, var(--color-brand-soft) 54%, transparent));
+  color: var(--color-text);
+}
+
+.preference-trigger-icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
+  color: #ffffff;
+}
+
+.preference-trigger-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.preference-trigger-copy strong,
+.preference-trigger-copy small {
+  display: block;
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preference-trigger-copy strong {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.preference-trigger-copy small {
+  color: var(--color-muted);
+  font-size: 11px;
   font-weight: 850;
+  line-height: 1.1;
 }
 
-html.dark .preference-field > span {
-  color: #cbd5e1;
+.preference-trigger-button.panel {
+  width: 100%;
+  min-height: 50px;
+  justify-content: flex-start;
 }
 
-html.dark .preference-select .ant-select-selector {
-  background: #0f172a !important;
-  border-color: #334155 !important;
+.romlek-preference-dropdown .ant-dropdown-menu {
+  min-width: 226px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-raised) 96%, transparent);
+  padding: 8px;
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+}
+
+.romlek-preference-dropdown .ant-dropdown-menu-item,
+.romlek-preference-dropdown .ant-dropdown-menu-submenu-title {
+  min-height: 40px;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-weight: 850;
+  padding: 0 10px;
+}
+
+.romlek-preference-dropdown .ant-dropdown-menu-title-content {
+  min-width: 0;
+}
+
+.preference-menu-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.preference-menu-label {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.romlek-preference-dropdown .ant-dropdown-menu-item:hover,
+.romlek-preference-dropdown .ant-dropdown-menu-submenu-title:hover,
+.romlek-preference-dropdown .ant-dropdown-menu-item-selected,
+.romlek-preference-dropdown .ant-dropdown-menu-item-selected:hover {
+  background: color-mix(in srgb, var(--color-brand) 11%, var(--color-surface));
+  color: var(--color-brand);
+}
+
+.romlek-preference-dropdown .ant-dropdown-menu-item-disabled,
+.romlek-preference-dropdown .ant-dropdown-menu-item-disabled:hover {
+  min-height: 28px;
+  cursor: default;
+  background: transparent !important;
+  color: var(--color-muted) !important;
+}
+
+.romlek-preference-dropdown .ant-dropdown-menu-item-divider {
+  margin: 6px 4px;
+  background: var(--color-border-soft);
+}
+
+html.dark .preference-trigger-button.ant-btn {
+  border-color: #34425c;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface-soft) 96%, transparent), color-mix(in srgb, var(--color-brand-soft) 42%, transparent));
   color: #f8fafc;
+  box-shadow: none;
+}
+
+html.dark .preference-trigger-button.ant-btn:hover,
+html.dark .preference-trigger-button.ant-btn:focus-visible {
+  border-color: #46607f;
+  color: #ffffff;
+}
+
+html.dark .romlek-preference-dropdown .ant-dropdown-menu {
+  border-color: #34425c;
+  background: color-mix(in srgb, var(--color-surface-soft) 96%, transparent);
 }
 
 .home-shell {
@@ -542,7 +768,9 @@ html.dark .preference-select .ant-select-selector {
   align-items: start;
   justify-content: center;
   min-height: 100vh;
-  background: var(--color-surface);
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--color-brand) 11%, transparent), transparent 28rem),
+    linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 45%, var(--color-bg-warm) 100%);
   color: var(--color-text);
 }
 
@@ -557,8 +785,10 @@ html.dark .preference-select .ant-select-selector {
 .home-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border-right: 1px solid var(--color-border);
+  gap: 12px;
+  border-right: 1px solid var(--color-border-soft);
+  background: color-mix(in srgb, var(--color-surface-raised) 74%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .home-brand,
@@ -569,17 +799,30 @@ html.dark .preference-select .ant-select-selector {
 }
 
 .home-brand {
-  width: 44px;
+  width: fit-content;
+  min-width: 44px;
   height: 44px;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 22%, var(--color-border-soft));
   border-radius: 999px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 14%, var(--color-surface)), var(--color-surface));
   color: var(--color-text);
-  font-size: 24px;
-  font-weight: 850;
+  font-size: 16px;
+  font-weight: 950;
+  padding: 0 14px 0 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+.home-brand svg {
+  color: var(--color-brand);
+}
+
+.home-brand span {
+  display: inline-flex;
 }
 
 .home-brand:hover,
 .home-nav-item:hover,
-.account-switcher:hover,
 .tweet-actions button:hover {
   background: var(--color-surface-soft);
 }
@@ -597,7 +840,7 @@ html.dark .preference-select .ant-select-selector {
   gap: 12px;
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--color-text);
   font-size: 15px;
   font-weight: 800;
@@ -611,10 +854,12 @@ html.dark .preference-select .ant-select-selector {
 }
 
 .home-nav-item.active {
-  border-color: color-mix(in srgb, var(--color-brand) 28%, var(--color-border-soft));
-  background: color-mix(in srgb, var(--color-brand) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-brand) 34%, var(--color-border-soft));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 12%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 6%, var(--color-surface)));
   color: var(--color-brand);
   font-weight: 800;
+  box-shadow: var(--shadow-soft);
 }
 
 .home-post-button,
@@ -644,33 +889,6 @@ html.dark .preference-select .ant-select-selector {
   gap: 10px;
 }
 
-.account-switcher {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin-top: auto;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  padding: 12px;
-  text-align: left;
-}
-
-.account-switcher.ant-btn {
-  height: auto;
-  justify-content: stretch;
-}
-
-.account-switcher.ant-btn > span {
-  display: contents;
-}
-
-.account-switcher strong,
-.account-switcher small,
 .suggestion-item strong,
 .suggestion-item small {
   display: block;
@@ -679,7 +897,6 @@ html.dark .preference-select .ant-select-selector {
   white-space: nowrap;
 }
 
-.account-switcher small,
 .tweet-meta span,
 .trend-item span,
 .trend-item small,
@@ -692,7 +909,7 @@ html.dark .preference-select .ant-select-selector {
   height: 40px;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: var(--color-brand);
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
   color: var(--color-brand-contrast);
   font-weight: 850;
 }
@@ -700,8 +917,9 @@ html.dark .preference-select .ant-select-selector {
 .timeline {
   width: 100%;
   min-height: 100vh;
-  border-right: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border-right: 1px solid var(--color-border-soft);
+  background: color-mix(in srgb, var(--color-surface-raised) 86%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .timeline-header {
@@ -895,11 +1113,13 @@ html.dark .composer-input.ant-input::placeholder {
   height: 42px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--color-brand);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 24%, var(--color-border-soft));
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
   color: var(--color-brand-contrast);
   font-size: 22px;
   font-weight: 900;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--color-brand) 20%, transparent);
 }
 
 .studio-nav {
@@ -913,7 +1133,7 @@ html.dark .composer-input.ant-input::placeholder {
   align-items: center;
   gap: 10px;
   min-height: 42px;
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--color-muted-strong);
   font-weight: 800;
   padding: 0 12px;
@@ -921,7 +1141,7 @@ html.dark .composer-input.ant-input::placeholder {
 
 .studio-nav-item:hover,
 .studio-nav-item.active {
-  background: var(--color-brand-soft);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 11%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 5%, var(--color-surface)));
   color: var(--color-brand);
 }
 
@@ -932,8 +1152,8 @@ html.dark .composer-input.ant-input::placeholder {
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 8px;
-  background: var(--color-action);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
   color: var(--color-action-contrast);
   font-weight: 850;
 }
@@ -1291,6 +1511,67 @@ html.dark .composer-input.ant-input::placeholder {
   color: #b91c1c;
 }
 
+.studio-post-details {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--color-border-soft);
+  padding-top: 10px;
+}
+
+.studio-post-details.modal-fields {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.studio-post-details label {
+  display: grid;
+  gap: 6px;
+}
+
+.studio-post-details label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.studio-post-details input,
+.studio-post-details textarea {
+  width: 100%;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 750;
+  outline: none;
+  padding: 9px 10px;
+}
+
+.studio-post-details textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.studio-post-details input::placeholder,
+.studio-post-details textarea::placeholder {
+  color: var(--color-muted);
+}
+
+.studio-post-details input:focus,
+.studio-post-details textarea:focus {
+  border-color: color-mix(in srgb, var(--color-brand) 48%, var(--color-border-soft));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 13%, transparent);
+}
+
+.studio-post-details input:disabled,
+.studio-post-details textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .studio-upload-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1327,9 +1608,23 @@ html.dark .composer-input.ant-input::placeholder {
   color: white;
 }
 
+.studio-upload-progress-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 26%, var(--color-border-soft));
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-soft) 52%, var(--color-surface)), var(--color-surface));
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
 .studio-upload-progress {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 .studio-upload-progress span {
@@ -1358,7 +1653,7 @@ html.dark .composer-input.ant-input::placeholder {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--color-brand);
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
   transition: width 160ms ease;
 }
 
@@ -1375,6 +1670,26 @@ html.dark .composer-input.ant-input::placeholder {
   100% {
     transform: translateX(240%);
   }
+}
+
+.studio-upload-cancel {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, #dc2626 34%, var(--color-border-soft));
+  border-radius: 999px;
+  background: color-mix(in srgb, #dc2626 9%, var(--color-surface));
+  color: #b91c1c;
+  cursor: pointer;
+  font-weight: 950;
+  padding: 8px 14px;
+}
+
+.studio-upload-cancel:hover {
+  border-color: color-mix(in srgb, #dc2626 48%, var(--color-border-soft));
+  background: color-mix(in srgb, #dc2626 14%, var(--color-surface));
 }
 
 .studio-upload-status {
@@ -1416,6 +1731,88 @@ html.dark .composer-input.ant-input::placeholder {
   color: var(--color-brand);
 }
 
+.studio-media-batchbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.studio-media-batchbar.active {
+  border: 1px solid var(--color-border-soft);
+  border-radius: 10px;
+  background: var(--color-surface);
+  padding: 9px 10px;
+}
+
+.studio-media-batchbar.idle {
+  justify-content: flex-end;
+}
+
+.studio-media-batchbar > span {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.studio-media-batchbar > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.studio-media-batchbar-start {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.studio-media-batchbar button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted-strong);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 11px;
+}
+
+.studio-media-batchbar button:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 35%, var(--color-border-soft));
+  color: var(--color-brand);
+}
+
+.studio-media-batchbar button.primary {
+  border-color: color-mix(in srgb, var(--color-brand) 32%, var(--color-border-soft));
+  background: color-mix(in srgb, var(--color-brand) 11%, var(--color-surface));
+  color: var(--color-brand);
+}
+
+.studio-media-batchbar button.primary:hover {
+  background: color-mix(in srgb, var(--color-brand) 17%, var(--color-surface));
+}
+
+.studio-media-batchbar button.danger {
+  border-color: color-mix(in srgb, #dc2626 28%, var(--color-border-soft));
+  color: #dc2626;
+}
+
+.studio-media-batchbar button.danger:hover {
+  background: color-mix(in srgb, #dc2626 9%, var(--color-surface));
+}
+
+.studio-media-batchbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .studio-media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1423,6 +1820,7 @@ html.dark .composer-input.ant-input::placeholder {
 }
 
 .studio-media-tile {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--color-border-soft);
   border-radius: 10px;
@@ -1435,6 +1833,40 @@ html.dark .composer-input.ant-input::placeholder {
   border-color: color-mix(in srgb, var(--color-brand) 24%, var(--color-border-soft));
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   transform: translateY(-1px);
+}
+
+.studio-media-tile.selected {
+  border-color: color-mix(in srgb, var(--color-brand) 58%, var(--color-border-soft));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 18%, transparent);
+}
+
+.studio-media-select {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.58);
+  color: transparent;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.studio-media-select[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--color-brand) 72%, #ffffff);
+  background: var(--color-brand);
+  color: var(--color-brand-contrast);
+}
+
+.studio-media-select:hover {
+  transform: scale(1.04);
 }
 
 .studio-media-preview {
@@ -1536,6 +1968,14 @@ html.dark .composer-input.ant-input::placeholder {
   font-size: 11px;
 }
 
+.studio-media-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.studio-media-edit,
 .studio-media-delete {
   display: inline-flex;
   width: 30px;
@@ -1550,11 +1990,21 @@ html.dark .composer-input.ant-input::placeholder {
   cursor: pointer;
 }
 
+.studio-media-edit {
+  color: var(--color-brand);
+}
+
+.studio-media-edit:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 35%, var(--color-border-soft));
+  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-surface));
+}
+
 .studio-media-delete:hover {
   border-color: color-mix(in srgb, #dc2626 35%, var(--color-border-soft));
   background: color-mix(in srgb, #dc2626 9%, var(--color-surface));
 }
 
+.studio-media-edit:disabled,
 .studio-media-delete:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -1822,8 +2272,7 @@ html.dark .composer-input.ant-input::placeholder {
 }
 
 .profile-preference-controls {
-  border-radius: 8px;
-  box-shadow: none;
+  width: 100%;
 }
 
 .profile-logout-button.ant-btn {
@@ -1903,9 +2352,10 @@ html.dark .composer-input.ant-input::placeholder {
   gap: 20px;
   border-bottom: 1px solid var(--color-border-soft);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 12%, transparent), color-mix(in srgb, var(--color-accent-warm) 8%, transparent)),
+    radial-gradient(circle at 88% 22%, color-mix(in srgb, var(--color-accent-warm) 24%, transparent), transparent 13rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 16%, transparent), color-mix(in srgb, var(--color-accent) 9%, transparent)),
     var(--color-surface-raised);
-  padding: 24px;
+  padding: 26px 24px;
 }
 
 .feed-hero-copy {
@@ -1920,11 +2370,13 @@ html.dark .composer-input.ant-input::placeholder {
   gap: 8px;
   border: 1px solid color-mix(in srgb, var(--color-brand) 24%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-surface) 76%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
   color: var(--color-brand);
   font-size: 13px;
   font-weight: 850;
-  padding: 6px 10px;
+  padding: 7px 11px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
 }
 
 .feed-hero h1 {
@@ -1965,7 +2417,8 @@ html.dark .composer-input.ant-input::placeholder {
 }
 
 .feed-stats small,
-.feed-author span {
+.feed-author span,
+.feed-author small {
   color: var(--color-muted);
 }
 
@@ -1974,7 +2427,7 @@ html.dark .composer-input.ant-input::placeholder {
   top: 0;
   z-index: 2;
   border-bottom: 1px solid var(--color-border-soft);
-  background: var(--color-surface-raised);
+  background: color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
   padding: 12px 16px;
   backdrop-filter: blur(12px);
 }
@@ -1984,8 +2437,8 @@ html.dark .composer-input.ant-input::placeholder {
   grid-auto-flow: column;
   gap: 4px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-subtle) 84%, transparent);
   padding: 3px;
 }
 
@@ -1993,7 +2446,7 @@ html.dark .composer-input.ant-input::placeholder {
   min-width: 108px;
   min-height: 38px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
   color: var(--color-muted);
   cursor: pointer;
@@ -2002,9 +2455,9 @@ html.dark .composer-input.ant-input::placeholder {
 }
 
 .feed-tabs button.active {
-  background: var(--color-surface);
-  color: var(--color-text-strong);
-  box-shadow: var(--shadow-soft);
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
+  color: #ffffff;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-brand) 22%, transparent);
 }
 
 .feed-composer {
@@ -2012,7 +2465,7 @@ html.dark .composer-input.ant-input::placeholder {
   grid-template-columns: 44px minmax(0, 1fr);
   gap: 14px;
   border-bottom: 1px solid var(--color-border-soft);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   padding: 18px 20px;
 }
 
@@ -2044,54 +2497,120 @@ html.dark .composer-input.ant-input::placeholder {
 .feed-list {
   display: grid;
   gap: 14px;
-  background: var(--color-surface-soft);
-  padding: 16px;
+  border-top: 1px solid var(--color-border-soft);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-soft) 90%, transparent), var(--color-bg));
+  padding: 18px 16px 16px;
 }
 
 .feed-card {
   display: grid;
   gap: 14px;
   border: 1px solid var(--color-border-soft);
-  border-radius: 8px;
-  background: var(--color-surface);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-brand-soft) 22%, var(--color-surface)));
   padding: 16px;
   box-shadow: var(--shadow-card);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.feed-card:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 28%, var(--color-border-soft));
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
 }
 
 .feed-card-header {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 36px;
-  align-items: center;
+  grid-template-columns: 48px minmax(0, 1fr) 38px;
+  align-items: start;
   gap: 12px;
 }
 
 .feed-avatar {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, var(--color-brand), var(--color-accent));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 8px 18px rgba(15, 118, 110, 0.16);
 }
 
 .feed-author {
   display: grid;
-  gap: 2px;
+  align-content: start;
+  gap: 6px;
   min-width: 0;
+  padding-top: 1px;
 }
 
-.feed-author strong,
-.feed-author span {
+.feed-author-line {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 8px;
+}
+
+.feed-author-line strong,
+.feed-author-line span,
+.feed-location {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.feed-author strong {
+.feed-author-line strong {
   color: var(--color-text);
+  font-size: 17px;
   font-weight: 900;
+  line-height: 1.15;
+}
+
+.feed-author-line span {
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.feed-author-line span + span::before {
+  content: "•";
+  margin-right: 8px;
+}
+
+.feed-location {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 26px;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-surface));
+  color: var(--color-muted-strong);
+  font-size: 13px;
+  font-weight: 850;
+  padding: 0 9px;
+}
+
+.feed-location svg {
+  flex: 0 0 auto;
+  color: var(--color-brand);
 }
 
 .save-button.ant-btn {
+  width: 38px;
+  height: 38px;
+  align-self: start;
+  border: 1px solid transparent;
   color: var(--color-muted);
+}
+
+.save-button.ant-btn:hover {
+  border-color: var(--color-border-soft);
+  background: var(--color-surface-subtle);
+  color: var(--color-brand);
 }
 
 .feed-card-body {
@@ -2105,7 +2624,7 @@ html.dark .composer-input.ant-input::placeholder {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-border);
 }
 
@@ -2288,7 +2807,10 @@ html.dark .composer-input.ant-input::placeholder {
 .search-box,
 .aside-panel {
   border-radius: 16px;
-  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-soft);
+  background: color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
 }
 
 .search-box {
@@ -2297,19 +2819,18 @@ html.dark .composer-input.ant-input::placeholder {
   padding: 12px 16px;
 }
 
-.home-preference-button.ant-btn {
-  width: 44px;
-  height: 44px;
+.home-preference-controls.ant-btn {
+  min-width: 132px;
+  height: 48px;
   justify-content: center;
-  padding: 0;
-}
-
-.home-preference-button.ant-btn > span:not(.ant-btn-icon):not(:first-child) {
-  display: none;
+  gap: 10px;
+  padding: 0 14px;
 }
 
 .aside-panel {
   overflow: hidden;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-raised) 92%, transparent), color-mix(in srgb, var(--color-brand-soft) 20%, var(--color-surface)));
 }
 
 .aside-panel h2 {
@@ -2367,16 +2888,78 @@ html.dark .composer-input.ant-input::placeholder {
   gap: 8px;
 }
 
-.preference-select {
-  width: 100%;
+.studio-preference-controls.ant-btn {
+  min-height: 42px;
+}
+
+html.dark .home-shell {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+html.dark .home-sidebar,
+html.dark .timeline {
+  border-color: #34425c;
+  background: #111827;
+}
+
+html.dark .home-sidebar {
+  border-right-color: #34425c;
+}
+
+html.dark .home-brand {
+  border-color: #34425c;
+  background: #111827;
+  color: #f8fafc;
+}
+
+html.dark .home-brand:hover,
+html.dark .home-nav-item:hover,
+html.dark .tweet-actions button:hover {
+  background: #172033;
+}
+
+html.dark .home-nav-item {
+  color: #f8fafc;
+}
+
+html.dark .home-nav-item.active {
+  border-color: #34425c;
+  background: #113f39;
+  color: #14b8a6;
+}
+
+html.dark .search-box,
+html.dark .aside-panel {
+  border-color: #34425c;
+  background: #111827;
+}
+
+html.dark .search-box {
+  color: #94a3b8;
 }
 
 html.dark .timeline {
-  background: rgba(2, 6, 23, 0.96);
+  background: #111827;
 }
 
 html.dark .timeline-composer {
-  background: #020617;
+  background: #111827;
+}
+
+html.dark .timeline-header {
+  border-bottom-color: #34425c;
+  background: rgba(17, 24, 39, 0.94);
+}
+
+html.dark .tweet-card {
+  border-bottom-color: #34425c;
+}
+
+html.dark .tweet-card:hover,
+html.dark .trend-item:hover,
+html.dark .suggestion-item:hover {
+  background: #172033;
 }
 
 html.dark .tweet-media-grid {
@@ -2420,13 +3003,13 @@ html.dark .studio-shell {
 html.dark .studio-sidebar,
 html.dark .studio-canvas,
 html.dark .studio-panel {
-  border-color: #1e293b;
-  background: #020617;
+  border-color: #34425c;
+  background: #111827;
 }
 
 html.dark .studio-topbar {
-  border-bottom-color: #1e293b;
-  background: rgba(15, 23, 42, 0.9);
+  border-bottom-color: #34425c;
+  background: rgba(17, 24, 39, 0.94);
 }
 
 html.dark .studio-topbar strong,
@@ -2442,42 +3025,42 @@ html.dark .studio-nav-item {
 
 html.dark .studio-nav-item:hover,
 html.dark .studio-nav-item.active {
-  background: #0f2f2d;
-  color: #5eead4;
+  background: #113f39;
+  color: #14b8a6;
 }
 
 html.dark .studio-account,
 html.dark .studio-search,
 html.dark .studio-metrics span {
-  border-color: #1e293b;
-  background: #0f172a;
+  border-color: #34425c;
+  background: #172033;
 }
 
 html.dark .studio-panel article {
-  border-top-color: #1e293b;
+  border-top-color: #34425c;
 }
 
 html.dark .studio-metrics strong {
-  color: #5eead4;
+  color: #14b8a6;
 }
 
 html.dark .profile-page {
-  background: #020617;
+  background: #0f172a;
 }
 
 html.dark .profile-hero,
 html.dark .profile-card {
-  border-color: #1e293b;
-  background: #020617;
+  border-color: #34425c;
+  background: #111827;
 }
 
 html.dark .profile-avatar {
-  border-color: #020617;
+  border-color: #111827;
 }
 
 html.dark .profile-edit-button.ant-btn {
-  border-color: #334155;
-  background: #0f172a;
+  border-color: #34425c;
+  background: #172033;
   color: #f8fafc;
 }
 
@@ -2504,18 +3087,18 @@ html.dark .profile-bio {
 }
 
 html.dark .profile-badges span {
-  background: #0f2f2d;
-  color: #5eead4;
+  background: #113f39;
+  color: #14b8a6;
 }
 
 html.dark .profile-stats article {
-  border-color: #1e293b;
-  background: #0f172a;
+  border-color: #34425c;
+  background: #172033;
 }
 
 html.dark .profile-stats span {
-  background: #0f2f2d;
-  color: #5eead4;
+  background: #113f39;
+  color: #14b8a6;
 }
 
 html.dark .profile-stats strong {
@@ -2529,42 +3112,42 @@ html.dark .profile-stats small {
 html.dark .profile-account-row,
 html.dark .profile-tabs,
 html.dark .profile-activity-item {
-  background: #0f172a;
+  background: #172033;
 }
 
 html.dark .profile-account-row > span {
-  background: #1e293b;
-  color: #5eead4;
+  background: #202a3d;
+  color: #14b8a6;
 }
 
 html.dark .profile-activity-icon {
-  background: #0f2f2d;
-  color: #5eead4;
+  background: #113f39;
+  color: #14b8a6;
 }
 
 html.dark .profile-activity-item {
-  border-color: #1e293b;
+  border-color: #34425c;
 }
 
 html.dark .profile-activity-list {
-  border-color: #1e293b;
+  border-color: #34425c;
 }
 
 html.dark .feed-hero {
-  border-bottom-color: #1e293b;
+  border-bottom-color: #34425c;
   background:
-    linear-gradient(135deg, rgba(45, 212, 191, 0.12), rgba(251, 146, 60, 0.08)),
-    rgba(2, 6, 23, 0.94);
+    linear-gradient(135deg, rgba(8, 148, 140, 0.12), rgba(47, 128, 237, 0.08)),
+    #111827;
 }
 
 html.dark .feed-kicker,
 html.dark .feed-stats span {
-  border-color: #334155;
-  background: rgba(15, 23, 42, 0.78);
+  border-color: #34425c;
+  background: rgba(23, 32, 51, 0.86);
 }
 
 html.dark .feed-kicker {
-  color: #5eead4;
+  color: #14b8a6;
 }
 
 html.dark .feed-hero h1,
@@ -2575,22 +3158,37 @@ html.dark .feed-author strong {
 
 html.dark .feed-hero p,
 html.dark .feed-stats small,
-html.dark .feed-author span,
+html.dark .feed-author-line span,
 html.dark .feed-card-actions .ant-btn,
 html.dark .save-button.ant-btn {
   color: #94a3b8;
 }
 
+html.dark .feed-location {
+  background: #113f39;
+  color: #cbd5e1;
+}
+
+html.dark .feed-location svg {
+  color: #14b8a6;
+}
+
+html.dark .save-button.ant-btn:hover {
+  border-color: #34425c;
+  background: #172033;
+  color: #14b8a6;
+}
+
 html.dark .feed-controls,
 html.dark .feed-composer,
 html.dark .feed-card {
-  border-color: #1e293b;
-  background: #020617;
+  border-color: #34425c;
+  background: #111827;
 }
 
 html.dark .feed-tabs {
-  border-color: #334155;
-  background: #0f172a;
+  border-color: #34425c;
+  background: #172033;
 }
 
 html.dark .feed-tabs button {
@@ -2598,7 +3196,7 @@ html.dark .feed-tabs button {
 }
 
 html.dark .feed-tabs button.active {
-  background: #1e293b;
+  background: #113f39;
   color: #f8fafc;
 }
 
@@ -2612,7 +3210,7 @@ html.dark .feed-card-body {
 
 html.dark .feed-card-actions,
 html.dark .feed-composer .composer-actions {
-  border-top-color: #1e293b;
+  border-top-color: #34425c;
 }
 
 html.dark .feed-media-grid {
@@ -2620,11 +3218,11 @@ html.dark .feed-media-grid {
 }
 
 html.dark .feed-media-item {
-  background: #1e293b;
+  background: #202a3d;
 }
 
 html.dark .composer-tool.ant-btn {
-  color: #5eead4;
+  color: #14b8a6;
 }
 
 @media (max-width: 1180px) {
@@ -2646,8 +3244,7 @@ html.dark .composer-tool.ant-btn {
   }
 
   .home-nav-item span,
-  .home-post-button span,
-  .account-switcher span:last-child {
+  .home-post-button span {
     display: none;
   }
 
@@ -2655,12 +3252,6 @@ html.dark .composer-tool.ant-btn {
     width: 52px;
     height: 52px;
     min-height: 52px;
-  }
-
-  .account-switcher {
-    grid-template-columns: 40px;
-    justify-content: center;
-    width: auto;
   }
 
   .studio-shell {
@@ -2807,8 +3398,7 @@ html.dark .composer-tool.ant-btn {
   }
 
   .home-brand,
-  .home-post-button,
-  .account-switcher {
+  .home-post-button {
     display: none;
   }
 
@@ -2845,14 +3435,14 @@ html.dark .composer-tool.ant-btn {
   }
 
   html.dark .home-sidebar {
-    border-top-color: #1e293b;
-    background: rgba(2, 6, 23, 0.96);
+    border-top-color: #34425c;
+    background: rgba(17, 24, 39, 0.96);
     box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.32);
   }
 
   html.dark .home-nav-item.active {
-    background: #0f2f2d;
-    color: #5eead4;
+    background: #113f39;
+    color: #14b8a6;
   }
 
   .studio-shell {
@@ -2880,6 +3470,19 @@ html.dark .composer-tool.ant-btn {
   .studio-content {
     display: block;
     padding: 10px;
+  }
+
+  .studio-media-batchbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .studio-media-batchbar > div {
+    justify-content: stretch;
+  }
+
+  .studio-media-batchbar button {
+    flex: 1 1 auto;
   }
 
   .studio-canvas {
@@ -2916,14 +3519,14 @@ html.dark .composer-tool.ant-btn {
   }
 
   html.dark .studio-mobile-nav {
-    border-top-color: #1e293b;
-    background: rgba(2, 6, 23, 0.96);
+    border-top-color: #34425c;
+    background: rgba(17, 24, 39, 0.96);
     box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.32);
   }
 
   html.dark .studio-mobile-nav a.active {
-    background: #0f2f2d;
-    color: #5eead4;
+    background: #113f39;
+    color: #14b8a6;
   }
 }
 
@@ -3157,6 +3760,44 @@ html.dark .composer-tool.ant-btn {
     font-size: 13px;
   }
 
+  .feed-card-header {
+    grid-template-columns: 38px minmax(0, 1fr) 34px;
+    gap: 10px;
+  }
+
+  .feed-card-header .feed-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .feed-author {
+    gap: 5px;
+  }
+
+  .feed-author-line {
+    gap: 3px 6px;
+  }
+
+  .feed-author-line strong {
+    max-width: 100%;
+    font-size: 15px;
+  }
+
+  .feed-author-line span {
+    font-size: 13px;
+  }
+
+  .feed-location {
+    min-height: 24px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .save-button.ant-btn {
+    width: 34px;
+    height: 34px;
+  }
+
   .feed-composer .composer-input.ant-input {
     min-height: 48px !important;
     font-size: 15px;
@@ -3288,6 +3929,6 @@ html.dark .composer-tool.ant-btn {
   }
 
   html.dark .feed-card-actions .ant-btn {
-    background: #0f172a;
+    background: #172033;
   }
 }

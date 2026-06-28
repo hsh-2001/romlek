@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Clapperboard, Home, PenLine, Search, Settings } from 'lucide-react';
+import { Clapperboard, Home, PenLine, Search, Settings, WalletCards } from 'lucide-react';
 import { getInitials } from '@/app/_components/AppShell';
-import { PreferenceDropdown } from '@/app/_components/PreferenceDropdown';
+import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
@@ -29,7 +29,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
     <main className="studio-shell">
       <aside className="studio-sidebar">
         <Link className="studio-brand" href="/studio" aria-label="Romlek Studio">
-          R
+          <WalletCards size={21} aria-hidden="true" />
         </Link>
 
         <nav className="studio-nav" aria-label="Studio">
@@ -71,7 +71,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
           </div>
           <div className="studio-topbar-actions">
             <div className="studio-search"><Search size={17} aria-hidden="true" /> {t('nav.search')}</div>
-            <PreferenceDropdown className="studio-preference-button" />
+            <PreferenceControls variant="inline" className="studio-preference-controls" />
             <Button className="studio-settings" type="text" shape="circle" aria-label={t('profile.settings')} href="/profile"><Settings size={18} aria-hidden="true" /></Button>
           </div>
         </header>

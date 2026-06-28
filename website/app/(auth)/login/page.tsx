@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Alert, Button, Form, Input } from 'antd';
-import { AtSign, LockKeyhole } from 'lucide-react';
-import { PreferenceDropdown } from '@/app/_components/PreferenceDropdown';
+import { AtSign, LockKeyhole, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
+import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import type { LoginCredentials } from '@/app/_types/auth';
@@ -34,13 +34,17 @@ export default function LoginPage() {
   return (
     <main className="auth-shell login-shell relative !text-slate-950 dark:!text-slate-100">
       <div className="login-topbar">
-        <PreferenceDropdown className="login-preference-button" />
+        <PreferenceControls variant="inline" className="login-preference-controls" />
       </div>
 
       <section className="auth-copy login-copy">
-        <p className="login-brand">Romlek</p>
+        <p className="login-brand"><WalletCards size={42} aria-hidden="true" /> Romlek</p>
         <h1 className="!text-slate-950 dark:!text-slate-100">{t('auth.loginTitle')}</h1>
         <p className="dark:!text-slate-300">{t('auth.loginBody')}</p>
+        <div className="login-proof-strip" aria-label="Romlek highlights">
+          <span><ShieldCheck size={17} aria-hidden="true" /> {t('auth.loginProofFeed')}</span>
+          <span><Sparkles size={17} aria-hidden="true" /> {t('auth.loginProofPrivate')}</span>
+        </div>
       </section>
 
       <Form className="auth-panel login-panel dark:!border-slate-800 dark:!bg-slate-900/90" layout="vertical" onFinish={submit}>

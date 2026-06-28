@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  Patch,
   Post,
   Body,
   Head,
@@ -67,6 +68,14 @@ export class UploadController {
           type: 'boolean',
           description: 'Whether uploaded files should be public.',
         },
+        location: {
+          type: 'string',
+          description: 'Required when uploaded media is for posting.',
+        },
+        caption: {
+          type: 'string',
+          description: 'Required when uploaded media is for posting.',
+        },
       },
     },
   })
@@ -85,6 +94,8 @@ export class UploadController {
     @Body('path') path?: string,
     @Body('uploaded_by') uploadedBy?: string,
     @Body('is_public') isPublic?: string | boolean,
+    @Body('location') location?: string,
+    @Body('caption') caption?: string,
   ) {
     const files = [
       ...(uploadedFiles.files ?? []),
@@ -94,7 +105,19 @@ export class UploadController {
     return this.uploadService.upload(files, path, {
       uploadedBy,
       isPublic,
+      location,
+      caption,
     });
+  }
+
+  @Patch(':id/posting-details')
+  @ApiOperation({ summary: 'Update posting location and caption for uploaded media' })
+  updatePostingDetails(
+    @Param('id') id: string,
+    @Body('location') location?: string,
+    @Body('caption') caption?: string,
+  ) {
+    return this.uploadService.updatePostingDetails(id, { location, caption });
   }
 
   @Head('render')

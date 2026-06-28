@@ -7,6 +7,8 @@ export type WebStreamBody = {
 export type UploadOptions = {
   uploadedBy?: string | number;
   isPublic?: string | boolean;
+  location?: string;
+  caption?: string;
 };
 
 export type RenderedFile = {

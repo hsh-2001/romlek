@@ -2,6 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // );
 export class CreateUploadDto {
+  @ApiPropertyOptional()
+  id?: string | number;
   @ApiProperty()
   file_name!: string;
   @ApiProperty()
@@ -26,8 +28,16 @@ export class CreateUploadDto {
   storage_provider?: string;
   @ApiPropertyOptional({ nullable: true })
   uploaded_by?: string | number | null;
+  @ApiPropertyOptional({ nullable: true })
+  uploader_username?: string | null;
+  @ApiPropertyOptional({ nullable: true })
+  uploader_name?: string | null;
   @ApiPropertyOptional({ default: false })
   is_public?: boolean;
+  @ApiPropertyOptional({ nullable: true })
+  location?: string | null;
+  @ApiPropertyOptional({ nullable: true })
+  caption?: string | null;
   @ApiPropertyOptional()
   created_at?: Date;
   @ApiPropertyOptional()

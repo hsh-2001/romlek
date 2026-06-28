@@ -188,9 +188,17 @@ const extractUser = (payload: AuthPayload): AuthUser | null => {
   return null;
 };
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
-  const [theme, setThemeState] = useState<ThemeMode>('light');
+export function AppProviders({
+  children,
+  initialLocale = 'en',
+  initialTheme = 'light',
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+  initialTheme?: ThemeMode;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [theme, setThemeState] = useState<ThemeMode>(initialTheme);
   const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -318,7 +326,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (credentials: RegisterCredentials) => {
-      const payload = await api<AuthPayload>('/auth/register', {
+      const payload = await api<AuthPayload>('/users/register', {
         method: 'POST',
         body: credentials,
       });
@@ -333,9 +341,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     if (token) {
       try {
-        await api('/auth/logout', { method: 'POST' });
+        await api('/users/logout', { method: 'POST' });
       } catch {
-        // The local session should be cleared even if the server token is already invalid.
+        console.error('Failed to log out from the server. Proceeding to clear local session.');
       }
     }
 

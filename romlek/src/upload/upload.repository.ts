@@ -12,36 +12,42 @@ export class UploadRepository {
       const params: unknown[] = [];
 
       if (options.publicOnly) {
-        whereClauses.push('is_public = TRUE');
+        whereClauses.push('media.is_public = TRUE');
       }
 
       if (options.uploadedBy) {
         params.push(options.uploadedBy);
-        whereClauses.push(`uploaded_by = $${params.length}`);
+        whereClauses.push(`media.uploaded_by = $${params.length}`);
       }
 
       const result = await this.databaseService.query<CreateUploadDto>(
         `
       SELECT
-        id,
-        file_name,
-        original_name,
-        file_path,
-        file_url,
-        mime_type,
-        extension,
-        file_size,
-        width,
-        height,
-        duration,
-        storage_provider,
-        uploaded_by,
-        is_public,
-        created_at,
-        updated_at
+        media.id,
+        media.file_name,
+        media.original_name,
+        media.file_path,
+        media.file_url,
+        media.mime_type,
+        media.extension,
+        media.file_size,
+        media.width,
+        media.height,
+        media.duration,
+        media.storage_provider,
+        media.uploaded_by,
+        uploader.username AS uploader_username,
+        uploader.username AS uploader_name,
+        media.is_public,
+        posting_details.location,
+        posting_details.caption,
+        media.created_at,
+        media.updated_at
       FROM media
+      LEFT JOIN media_posting_details posting_details ON posting_details.media_id = media.id
+      LEFT JOIN users uploader ON uploader.id = media.uploaded_by
       ${whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''}
-      ORDER BY created_at DESC, id DESC
+      ORDER BY media.created_at DESC, media.id DESC
     `,
         params,
       );
@@ -58,24 +64,30 @@ export class UploadRepository {
       const result = await this.databaseService.query<CreateUploadDto>(
         `
       SELECT
-        id,
-        file_name,
-        original_name,
-        file_path,
-        file_url,
-        mime_type,
-        extension,
-        file_size,
-        width,
-        height,
-        duration,
-        storage_provider,
-        uploaded_by,
-        is_public,
-        created_at,
-        updated_at
+        media.id,
+        media.file_name,
+        media.original_name,
+        media.file_path,
+        media.file_url,
+        media.mime_type,
+        media.extension,
+        media.file_size,
+        media.width,
+        media.height,
+        media.duration,
+        media.storage_provider,
+        media.uploaded_by,
+        uploader.username AS uploader_username,
+        uploader.username AS uploader_name,
+        media.is_public,
+        posting_details.location,
+        posting_details.caption,
+        media.created_at,
+        media.updated_at
       FROM media
-      WHERE id = $1
+      LEFT JOIN media_posting_details posting_details ON posting_details.media_id = media.id
+      LEFT JOIN users uploader ON uploader.id = media.uploaded_by
+      WHERE media.id = $1
       LIMIT 1
     `,
         [id],
@@ -129,6 +141,29 @@ export class UploadRepository {
       return result?.rows[0] ?? null;
     } catch (error) {
       console.error('Error creating upload:', error);
+      throw error;
+    }
+  }
+
+  async upsertPostingDetails(mediaId: string | number, details: { location: string; caption: string }) {
+    try {
+      const result = await this.databaseService.query(
+        `
+      INSERT INTO media_posting_details (media_id, location, caption)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (media_id)
+      DO UPDATE SET
+        location = EXCLUDED.location,
+        caption = EXCLUDED.caption,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `,
+        [mediaId, details.location, details.caption],
+      );
+
+      return result.rows[0] ?? null;
+    } catch (error) {
+      console.error('Error saving posting details:', error);
       throw error;
     }
   }

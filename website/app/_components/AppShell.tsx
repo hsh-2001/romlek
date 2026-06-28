@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Clapperboard, Home, User } from 'lucide-react';
-import { PreferenceDropdown } from '@/app/_components/PreferenceDropdown';
-import { useAuth } from '@/app/_hooks/useAuth';
+import { Clapperboard, Home, User, WalletCards } from 'lucide-react';
+import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
 type ActiveRoute = 'feed' | 'explore' | 'notifications' | 'messages' | 'profile' | 'studio';
@@ -27,10 +26,7 @@ const getInitials = (value: string) => {
 };
 
 export function AppShell({ active, children }: { active: ActiveRoute; children: React.ReactNode }) {
-  const { user } = useAuth();
   const { t } = usePreferences();
-  const displayName = user?.name || user?.username || user?.email || 'Welcome';
-  const initials = getInitials(displayName);
   const trends = [
     { category: t('aside.trending'), title: 'Next.js', count: `12.8K ${t('aside.posts')}` },
     { category: t('aside.technology'), title: 'React', count: `4,204 ${t('aside.posts')}` },
@@ -42,10 +38,11 @@ export function AppShell({ active, children }: { active: ActiveRoute; children: 
   ];
 
   return (
-    <main className="home-shell !bg-white !text-slate-950 dark:!bg-slate-950 dark:!text-slate-100">
-      <aside className="home-sidebar dark:!border-slate-800">
-        <Link className="home-brand dark:!text-slate-100" href="/feed">
-          R
+    <main className="home-shell">
+      <aside className="home-sidebar">
+        <Link className="home-brand" href="/feed" aria-label="Romlek">
+          <WalletCards size={23} aria-hidden="true" />
+          <span>Romlek</span>
         </Link>
 
         <nav className="home-nav" aria-label="Primary">
@@ -54,7 +51,7 @@ export function AppShell({ active, children }: { active: ActiveRoute; children: 
             return (
               <Link
                 key={item.to}
-                className={`home-nav-item dark:!text-slate-100 dark:hover:!bg-slate-900 ${active === item.key ? 'active' : ''}`}
+                className={`home-nav-item ${active === item.key ? 'active' : ''}`}
                 href={item.to}
                 aria-label={t(item.labelKey)}
               >
@@ -64,28 +61,20 @@ export function AppShell({ active, children }: { active: ActiveRoute; children: 
             );
           })}
         </nav>
-
-        <Link className="account-switcher dark:!text-slate-100 dark:hover:!bg-slate-900" href="/profile" aria-label={t('nav.profile')}>
-          <span className="mini-avatar">{initials}</span>
-          <span>
-            <strong>{displayName}</strong>
-            <small>{t('nav.profile')}</small>
-          </span>
-        </Link>
       </aside>
 
-      <section className="timeline dark:!border-slate-800">{children}</section>
+      <section className="timeline">{children}</section>
 
       <aside className="home-aside">
         <div className="home-aside-header">
-          <div className="search-box dark:!bg-slate-900 dark:!text-slate-400">{t('nav.search')}</div>
-          <PreferenceDropdown className="home-preference-button" />
+          <div className="search-box">{t('nav.search')}</div>
+          <PreferenceControls variant="inline" className="home-preference-controls" />
         </div>
 
-        <section className="aside-panel dark:!bg-slate-900">
+        <section className="aside-panel">
           <h2>{t('aside.happening')}</h2>
           {trends.map((trend) => (
-            <article key={trend.title} className="trend-item dark:hover:!bg-slate-800">
+            <article key={trend.title} className="trend-item">
               <span>{trend.category}</span>
               <strong>{trend.title}</strong>
               <small>{trend.count}</small>
@@ -93,10 +82,10 @@ export function AppShell({ active, children }: { active: ActiveRoute; children: 
           ))}
         </section>
 
-        <section className="aside-panel dark:!bg-slate-900">
+        <section className="aside-panel">
           <h2>{t('aside.follow')}</h2>
           {suggestions.map((person) => (
-            <article key={person.username} className="suggestion-item dark:hover:!bg-slate-800">
+            <article key={person.username} className="suggestion-item">
               <span className="mini-avatar">{person.initials}</span>
               <span>
                 <strong>{person.name}</strong>
