@@ -29,7 +29,7 @@ export default function NotificationsPage() {
         <Segmented value={activeNotificationTab} className="timeline-segmented" options={notificationTabOptions} block onChange={(value) => setActiveNotificationTab(String(value))} />
       </header>
 
-      <section className="grid justify-items-start gap-3 border-b border-slate-100 px-6 py-10 text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <section className="grid justify-items-start gap-3 border-b border-slate-100 px-3 py-6 text-slate-500 dark:border-slate-800 dark:text-slate-400 md:px-6 md:py-10">
         <Bell size={42} aria-hidden="true" />
         <h2 className="text-2xl font-black text-slate-950 dark:text-slate-100">{t('notifications.emptyTitle')}</h2>
         <p className="max-w-md leading-7">{t('notifications.emptyBody')}</p>
@@ -38,7 +38,7 @@ export default function NotificationsPage() {
       {notifications.map((item) => {
         const Icon = item.icon;
         return (
-          <article key={item.id} className="grid grid-cols-[24px_minmax(0,1fr)] gap-3 border-b border-slate-100 px-4 py-4 text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900">
+          <article key={item.id} className="grid grid-cols-[24px_minmax(0,1fr)] gap-3 border-b border-slate-100 px-3 py-3 text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 md:px-4 md:py-4">
             <Icon size={20} aria-hidden="true" />
             <span className="grid gap-1">
               <strong className="text-slate-950 dark:text-slate-100">{item.title}</strong>

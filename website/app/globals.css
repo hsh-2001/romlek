@@ -1741,20 +1741,37 @@ html.dark .composer-input.ant-input::placeholder {
 
 .studio-media-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .studio-media-subfilters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 7px;
   margin-top: -4px;
-  padding-left: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 0 4px 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.studio-media-filters::-webkit-scrollbar,
+.studio-media-subfilters::-webkit-scrollbar {
+  display: none;
 }
 
 .studio-media-filters button,
 .studio-media-subfilters button {
+  flex: 0 0 auto;
   border: 1px solid var(--color-border-soft);
   border-radius: 999px;
   background: var(--color-surface);
@@ -4030,7 +4047,7 @@ html.dark .composer-tool.ant-btn {
 
   .studio-content {
     display: block;
-    padding: 10px;
+    padding: 8px;
   }
 
   .studio-media-batchbar {
@@ -4093,14 +4110,14 @@ html.dark .composer-tool.ant-btn {
 
 @media (max-width: 540px) {
   .auth-shell {
-    width: calc(100vw - 24px);
+    width: calc(100vw - 16px);
     max-width: 480px;
-    padding: 28px 0;
+    padding: 20px 0;
   }
 
   .login-shell {
-    width: min(100% - 24px, 420px);
-    padding-top: 58px;
+    width: min(100% - 16px, 420px);
+    padding-top: 50px;
   }
 
   .auth-copy,
@@ -4133,16 +4150,16 @@ html.dark .composer-tool.ant-btn {
   }
 
   .auth-panel {
-    padding: 18px;
+    padding: 14px;
   }
 
   .login-panel-content {
-    gap: 16px;
-    padding: 24px 22px 20px;
+    gap: 14px;
+    padding: 18px 14px 16px;
   }
 
   .login-panel-actions {
-    padding: 20px 22px 24px;
+    padding: 16px 14px 18px;
   }
 
   .auth-panel h2 {
@@ -4150,13 +4167,13 @@ html.dark .composer-tool.ant-btn {
   }
 
   .profile-page {
-    gap: 10px;
-    padding: 8px;
+    gap: 8px;
+    padding: 6px;
   }
 
   .profile-cover {
     height: 104px;
-    padding: 10px;
+    padding: 8px;
   }
 
   .profile-cover span {
@@ -4167,12 +4184,12 @@ html.dark .composer-tool.ant-btn {
 
   .profile-identity {
     gap: 10px;
-    padding: 46px 14px 14px;
+    padding: 44px 10px 10px;
   }
 
   .profile-avatar {
     top: -40px;
-    left: 14px;
+    left: 10px;
     width: 80px;
     height: 80px;
     border-width: 4px;
@@ -4181,7 +4198,7 @@ html.dark .composer-tool.ant-btn {
 
   .profile-edit-button.ant-btn {
     top: 13px;
-    right: 14px;
+    right: 10px;
     min-height: 34px;
     padding-inline: 13px;
   }
@@ -4198,7 +4215,7 @@ html.dark .composer-tool.ant-btn {
   .profile-stats article {
     grid-template-columns: 32px auto minmax(0, 1fr);
     align-items: center;
-    padding: 10px;
+    padding: 8px;
   }
 
   .profile-stats strong {
@@ -4215,8 +4232,8 @@ html.dark .composer-tool.ant-btn {
   }
 
   .profile-card {
-    gap: 13px;
-    padding: 14px;
+    gap: 10px;
+    padding: 10px;
   }
 
   .profile-account-row {
@@ -4237,8 +4254,8 @@ html.dark .composer-tool.ant-btn {
   .timeline-composer,
   .tweet-card {
     grid-template-columns: 36px minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 8px;
+    padding: 10px 8px;
   }
 
   .mini-avatar {
@@ -4249,7 +4266,7 @@ html.dark .composer-tool.ant-btn {
 
   .feed-hero {
     gap: 5px;
-    padding: 12px 12px 10px;
+    padding: 10px 8px 8px;
   }
 
   .feed-hero h1 {
@@ -4279,7 +4296,7 @@ html.dark .composer-tool.ant-btn {
   .feed-stats span {
     min-width: 104px;
     border-radius: 7px;
-    padding: 10px 11px;
+    padding: 8px 9px;
   }
 
   .feed-stats strong {
@@ -4292,7 +4309,7 @@ html.dark .composer-tool.ant-btn {
 
   .feed-controls {
     top: 0;
-    padding: 9px 12px;
+    padding: 8px;
   }
 
   .feed-tabs {
@@ -4353,8 +4370,8 @@ html.dark .composer-tool.ant-btn {
 
   .feed-composer {
     grid-template-columns: 34px minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
+    gap: 8px;
+    padding: 8px;
   }
 
   .feed-avatar {
@@ -4458,14 +4475,14 @@ html.dark .composer-tool.ant-btn {
   }
 
   .feed-list {
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px;
   }
 
   .feed-card {
-    gap: 12px;
+    gap: 10px;
     border-radius: 7px;
-    padding: 12px;
+    padding: 8px;
     box-shadow: none;
   }
 
@@ -4592,7 +4609,7 @@ html.dark .composer-tool.ant-btn {
   .feed-media-file {
     min-height: 100%;
     font-size: 13px;
-    padding: 12px;
+    padding: 8px;
   }
 
   .feed-media-more {

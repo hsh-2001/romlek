@@ -31,7 +31,7 @@ export default async function RootLayout({
 
   return (
     <html lang={initialLocale} className={initialTheme === 'dark' ? 'dark' : undefined} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         <AntdRegistry>
           <AppProviders initialLocale={initialLocale} initialTheme={initialTheme}>{children}</AppProviders>
         </AntdRegistry>

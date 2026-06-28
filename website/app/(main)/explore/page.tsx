@@ -41,14 +41,14 @@ export default function ExplorePage() {
         <h1>{t('explore.title')}</h1>
       </header>
 
-      <section className="border-b border-slate-100 p-4 dark:border-slate-800">
+      <section className="border-b border-slate-100 p-3 dark:border-slate-800 md:p-4">
         <Input value={query} size="large" allowClear placeholder={t('explore.searchPlaceholder')} prefix={<Search size={18} aria-hidden="true" />} onChange={(event) => setQuery(event.target.value)} />
       </section>
 
       <section className="border-b border-slate-100 py-2 dark:border-slate-800">
-        <h2 className="px-4 py-3 text-xl font-black text-slate-950 dark:text-slate-100">{t('explore.topics')}</h2>
+        <h2 className="px-3 py-2 text-xl font-black text-slate-950 dark:text-slate-100 md:px-4 md:py-3">{t('explore.topics')}</h2>
         {filteredTopics.map((topic) => (
-          <article key={topic.title} className="px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-900">
+          <article key={topic.title} className="px-3 py-2 transition hover:bg-slate-50 dark:hover:bg-slate-900 md:px-4 md:py-3">
             <span className="grid gap-1">
               <small className="text-slate-500 dark:text-slate-400">{topic.category}</small>
               <strong className="text-slate-950 dark:text-slate-100">{topic.title}</strong>
@@ -59,7 +59,7 @@ export default function ExplorePage() {
       </section>
 
       <section className="py-2">
-        <h2 className="px-4 py-3 text-xl font-black text-slate-950 dark:text-slate-100">{t('explore.latest')}</h2>
+        <h2 className="px-3 py-2 text-xl font-black text-slate-950 dark:text-slate-100 md:px-4 md:py-3">{t('explore.latest')}</h2>
         {latestPosts.map((post) => (
           <article key={post.id} className="tweet-card dark:!border-slate-800 dark:hover:!bg-slate-900">
             <div className="mini-avatar">{post.initials}</div>
