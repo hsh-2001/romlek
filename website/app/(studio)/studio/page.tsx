@@ -870,7 +870,7 @@ export default function StudioMediaPage() {
                           {!isSelectionMode ? (
                             <div className="studio-media-actions">
                               <Dropdown
-                                overlayClassName="studio-media-action-menu"
+                                classNames={{ root: 'studio-media-action-menu' }}
                                 placement="bottomRight"
                                 trigger={['click']}
                                 menu={{
