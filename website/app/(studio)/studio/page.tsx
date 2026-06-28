@@ -1,18 +1,9 @@
 'use client';
 
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { Dropdown, Modal } from 'antd';
 import {
-  File,
-  FileArchive,
-  FileAudio,
-  FileCode,
-  FileJson,
-  FileSpreadsheet,
   FileText,
-  FileType,
-  Download,
-  ExternalLink,
   Pencil,
   Globe2,
   Image as ImageIcon,
@@ -20,22 +11,40 @@ import {
   MapPin,
   MessageSquareText,
   MoreVertical,
-  Presentation,
   Check,
+  CalendarDays,
+  Clock3,
+  Lightbulb,
+  Sparkles,
   Trash2,
   UploadCloud,
+  Users,
   Video,
+  Wallet,
   X,
 } from 'lucide-react';
+import { CaptionEditor } from '@/app/_components/CaptionEditor';
 import { HlsVideo } from '@/app/_components/HlsVideo';
 import { MediaPreviewActions } from '@/app/_components/MediaPreviewActions';
 import { StudioShell } from '@/app/_components/StudioShell';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
-import { useTimelinePosts, type TimelineMedia } from '@/app/_hooks/useTimelinePosts';
+import { useTimelinePosts, type TimelineMedia, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
 
 type MediaFilter = 'all' | TimelineMedia['kind'] | 'albums' | `album:${string}`;
 type UploadPhase = 'idle' | 'uploading' | 'processing' | 'complete';
+type TripStoryDetails = {
+  title: string;
+  location: string;
+  caption: string;
+  travelDate: string;
+  duration: string;
+  travelStyle: string;
+  companions: string;
+  budget: string;
+  highlights: string;
+  tips: string;
+};
 type UploadResponse = {
   files?: Array<{
     media?: {
@@ -60,30 +69,14 @@ const getMediaIcon = (kind: TimelineMedia['kind']) => {
   return FileText;
 };
 
-const getFileExtension = (filename: string) => {
-  const cleanFilename = filename.split('?')[0] || filename;
-  const basename = cleanFilename.split('/').pop() || cleanFilename;
-  return basename.includes('.') ? basename.split('.').pop()?.toLowerCase() ?? '' : '';
-};
+const getFileName = (media: Pick<TimelineMedia, 'alt' | 'url'>) => {
+  const rawName = media.alt || media.url.split('/').pop() || 'Document';
 
-const getFileIcon = (filename: string) => {
-  const extension = getFileExtension(filename);
-
-  if (extension === 'pdf') return FileType;
-  if (['doc', 'docx', 'txt', 'rtf', 'md'].includes(extension)) return FileText;
-  if (['xls', 'xlsx', 'csv'].includes(extension)) return FileSpreadsheet;
-  if (['ppt', 'pptx', 'key'].includes(extension)) return Presentation;
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) return FileArchive;
-  if (['mp3', 'wav', 'm4a', 'aac', 'flac'].includes(extension)) return FileAudio;
-  if (['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'sql', 'xml'].includes(extension)) return FileCode;
-  if (['json', 'jsonl'].includes(extension)) return FileJson;
-
-  return File;
-};
-
-const getFileTypeLabel = (filename: string) => {
-  const extension = getFileExtension(filename);
-  return extension ? extension.toUpperCase() : 'FILE';
+  try {
+    return decodeURIComponent(rawName);
+  } catch {
+    return rawName;
+  }
 };
 
 const formatFileSize = (size: number) => {
@@ -97,6 +90,8 @@ const getUploadedMediaIds = (payload: UploadResponse) => {
     .map((file) => file.media?.id)
     .filter((id): id is string | number => id !== undefined && id !== null);
 };
+
+const getUniqueMediaIds = (items: TimelineMedia[]) => Array.from(new Set(items.map((media) => media.id)));
 
 const getDateKey = (value?: string) => {
   if (!value) {
@@ -129,6 +124,32 @@ const formatDateHeading = (value: string, fallback: string) => {
   }).format(date);
 };
 
+const emptyTripStoryDetails = (): TripStoryDetails => ({
+  title: '',
+  location: '',
+  caption: '',
+  travelDate: '',
+  duration: '',
+  travelStyle: '',
+  companions: '',
+  budget: '',
+  highlights: '',
+  tips: '',
+});
+
+const getTripStoryPayload = (details: TripStoryDetails) => ({
+  title: details.title.trim() || null,
+  body: details.caption.trim(),
+  location: details.location.trim(),
+  travel_date: details.travelDate || null,
+  duration: details.duration.trim() || null,
+  travel_style: details.travelStyle.trim() || null,
+  companions: details.companions.trim() || null,
+  budget: details.budget.trim() || null,
+  highlights: details.highlights.trim() || null,
+  tips: details.tips.trim() || null,
+});
+
 export default function StudioMediaPage() {
   const { api, user } = useAuth();
   const { t } = usePreferences();
@@ -137,15 +158,13 @@ export default function StudioMediaPage() {
   const [activeFilter, setActiveFilter] = useState<MediaFilter>('all');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isPublicUpload, setIsPublicUpload] = useState(false);
-  const [postLocation, setPostLocation] = useState('');
-  const [postCaption, setPostCaption] = useState('');
+  const [postDetails, setPostDetails] = useState<TripStoryDetails>(() => emptyTripStoryDetails());
   const [editingMedia, setEditingMedia] = useState<TimelineMedia | null>(null);
   const [editLocation, setEditLocation] = useState('');
   const [editCaption, setEditCaption] = useState('');
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isPostSelectionOpen, setIsPostSelectionOpen] = useState(false);
-  const [selectionLocation, setSelectionLocation] = useState('');
-  const [selectionCaption, setSelectionCaption] = useState('');
+  const [selectionDetails, setSelectionDetails] = useState<TripStoryDetails>(() => emptyTripStoryDetails());
   const [isPostingSelection, setIsPostingSelection] = useState(false);
   const [previewMedia, setPreviewMedia] = useState<TimelineMedia | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -162,20 +181,37 @@ export default function StudioMediaPage() {
   const uploaderId = user?.id !== undefined && user?.id !== null ? String(user.id) : '';
   const posts = useTimelinePosts(refreshKey, { uploadedBy: uploaderId || '__missing_user__' });
   const mediaItems = useMemo(
-    () =>
-      posts.flatMap((post) =>
-        post.media.map((media) => ({
-          ...media,
-          postId: post.id,
-          albumId: media.albumId || post.albumId,
-          albumCode: media.albumCode || post.albumCode,
-          albumTitle: media.albumTitle || post.albumTitle,
-          albumSize: post.media.length,
-          author: post.name,
-          time: post.time,
-          createdAt: post.createdAt,
-        })),
-      ),
+    () => {
+      const uniqueMedia = new Map<string, TimelineMedia & {
+        postId: TimelinePost['id'];
+        albumSize: number;
+        author: string;
+        time: string;
+        createdAt?: string;
+      }>();
+
+      posts.forEach((post) => {
+        post.media.forEach((media) => {
+          if (uniqueMedia.has(media.id)) {
+            return;
+          }
+
+          uniqueMedia.set(media.id, {
+            ...media,
+            postId: post.id,
+            albumId: media.albumId || post.albumId,
+            albumCode: media.albumCode || post.albumCode,
+            albumTitle: media.albumTitle || post.albumTitle,
+            albumSize: post.media.length,
+            author: post.name,
+            time: post.time,
+            createdAt: post.createdAt,
+          });
+        });
+      });
+
+      return Array.from(uniqueMedia.values());
+    },
     [posts],
   );
   const albumFilterOptions = useMemo(() => {
@@ -218,12 +254,12 @@ export default function StudioMediaPage() {
   }, [filteredMedia, t]);
   const filteredMediaIds = filteredMedia.map((media) => media.id);
   const selectedMedia = mediaItems.filter((media) => selectedMediaIds.includes(media.id));
-  const selectedLibraryMedia = selectedMedia.filter((media) => !media.isPublic);
+  const selectedPostMediaIds = getUniqueMediaIds(selectedMedia);
   const selectedVisibleCount = filteredMediaIds.filter((id) => selectedMediaIds.includes(id)).length;
   const hasSelectedMedia = selectedMediaIds.length > 0;
-  const hasSelectedLibraryMedia = selectedLibraryMedia.length > 0;
+  const hasSelectedPostMedia = selectedPostMediaIds.length > 0;
   const allVisibleSelected = filteredMediaIds.length > 0 && selectedVisibleCount === filteredMediaIds.length;
-  const hasPostDetails = postLocation.trim().length > 0 && postCaption.trim().length > 0;
+  const hasPostDetails = postDetails.location.trim().length > 0 && postDetails.caption.trim().length > 0;
   const canUpload = selectedFiles.length > 0 && Boolean(uploaderId) && !isUploading && (!isPublicUpload || hasPostDetails);
 
   useEffect(() => {
@@ -262,17 +298,18 @@ export default function StudioMediaPage() {
     setIsSelectionMode(false);
   };
 
-  const createAlbumPost = async (mediaIds: Array<string | number>, details: { location: string; caption: string }) => {
+  const createAlbumPost = async (mediaIds: Array<string | number>, details: TripStoryDetails) => {
     if (!mediaIds.length) {
       return;
     }
+
+    const payload = getTripStoryPayload(details);
 
     await api('/posts', {
       method: 'POST',
       body: {
         user_id: uploaderId,
-        body: details.caption,
-        location: details.location,
+        ...payload,
         status: 'published',
         media_ids: mediaIds,
       },
@@ -300,8 +337,8 @@ export default function StudioMediaPage() {
     formData.append('is_public', String(isPublicUpload));
     formData.append('uploaded_by', uploaderId);
     if (isPublicUpload) {
-      formData.append('location', postLocation.trim());
-      formData.append('caption', postCaption.trim());
+      formData.append('location', postDetails.location.trim());
+      formData.append('caption', postDetails.caption.trim());
     }
 
     setIsUploading(true);
@@ -330,16 +367,12 @@ export default function StudioMediaPage() {
         },
       });
       if (isPublicUpload) {
-        await createAlbumPost(getUploadedMediaIds(payload), {
-          location: postLocation.trim(),
-          caption: postCaption.trim(),
-        });
+        await createAlbumPost(getUploadedMediaIds(payload), postDetails);
       }
       setUploadPhase('complete');
       setUploadProgress(100);
       clearSelectedFiles();
-      setPostLocation('');
-      setPostCaption('');
+      setPostDetails(emptyTripStoryDetails());
       setRefreshKey((value) => value + 1);
     } catch (error) {
       setUploadPhase('idle');
@@ -474,20 +507,19 @@ export default function StudioMediaPage() {
   };
 
   const openPostSelectionDialog = () => {
-    if (!selectedLibraryMedia.length) {
+    if (!selectedPostMediaIds.length) {
       return;
     }
 
-    setSelectionLocation('');
-    setSelectionCaption('');
+    setSelectionDetails(emptyTripStoryDetails());
     setUploadError('');
     setUploadMessage('');
     setIsPostSelectionOpen(true);
   };
 
   const saveSelectedAsPosts = async () => {
-    const location = selectionLocation.trim();
-    const caption = selectionCaption.trim();
+    const location = selectionDetails.location.trim();
+    const caption = selectionDetails.caption.trim();
     if (!location || !caption) {
       setUploadError(t('media.postDetailsRequired'));
       return;
@@ -499,26 +531,142 @@ export default function StudioMediaPage() {
 
     try {
       await Promise.all(
-        selectedLibraryMedia.map((media) =>
-          api(`/upload/${encodeURIComponent(media.id)}/posting-details`, {
+        selectedPostMediaIds.map((mediaId) =>
+          api(`/upload/${encodeURIComponent(mediaId)}/posting-details`, {
             method: 'PATCH',
             body: { location, caption },
           }),
         ),
       );
-      await createAlbumPost(selectedLibraryMedia.map((media) => media.id), {
-        location,
-        caption,
-      });
+      await createAlbumPost(selectedPostMediaIds, selectionDetails);
       setIsPostSelectionOpen(false);
       clearMediaSelection();
-      setUploadMessage(t('media.postSelectedSuccess').replace('{count}', String(selectedLibraryMedia.length)));
+      setUploadMessage(t('media.postSelectedSuccess').replace('{count}', String(selectedPostMediaIds.length)));
       setRefreshKey((value) => value + 1);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : t('media.postDetailsUpdateError'));
     } finally {
       setIsPostingSelection(false);
     }
+  };
+
+  const renderTripStoryFields = (
+    details: TripStoryDetails,
+    setDetails: Dispatch<SetStateAction<TripStoryDetails>>,
+    disabled: boolean,
+  ) => {
+    const updateDetails = (key: keyof TripStoryDetails) => (value: string) => {
+      setDetails((currentDetails) => ({ ...currentDetails, [key]: value }));
+    };
+
+    return (
+      <>
+        <label className="wide">
+          <span><Sparkles size={15} aria-hidden="true" /> {t('media.storyTitleLabel')}</span>
+          <input
+            value={details.title}
+            disabled={disabled}
+            placeholder={t('media.storyTitlePlaceholder')}
+            onChange={(event) => updateDetails('title')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
+          <input
+            value={details.location}
+            disabled={disabled}
+            placeholder={t('media.locationPlaceholder')}
+            onChange={(event) => updateDetails('location')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><CalendarDays size={15} aria-hidden="true" /> {t('media.travelDateLabel')}</span>
+          <input
+            type="date"
+            value={details.travelDate}
+            disabled={disabled}
+            onChange={(event) => updateDetails('travelDate')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><Clock3 size={15} aria-hidden="true" /> {t('media.durationLabel')}</span>
+          <input
+            value={details.duration}
+            disabled={disabled}
+            placeholder={t('media.durationPlaceholder')}
+            onChange={(event) => updateDetails('duration')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><Sparkles size={15} aria-hidden="true" /> {t('media.travelStyleLabel')}</span>
+          <input
+            value={details.travelStyle}
+            disabled={disabled}
+            placeholder={t('media.travelStylePlaceholder')}
+            onChange={(event) => updateDetails('travelStyle')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><Users size={15} aria-hidden="true" /> {t('media.companionsLabel')}</span>
+          <input
+            value={details.companions}
+            disabled={disabled}
+            placeholder={t('media.companionsPlaceholder')}
+            onChange={(event) => updateDetails('companions')(event.target.value)}
+          />
+        </label>
+        <label>
+          <span><Wallet size={15} aria-hidden="true" /> {t('media.budgetLabel')}</span>
+          <input
+            value={details.budget}
+            disabled={disabled}
+            placeholder={t('media.budgetPlaceholder')}
+            onChange={(event) => updateDetails('budget')(event.target.value)}
+          />
+        </label>
+        <label className="wide">
+          <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
+          <CaptionEditor
+            value={details.caption}
+            disabled={disabled}
+            placeholder={t('media.captionPlaceholder')}
+            rows={3}
+            labels={{
+              toolbar: t('media.captionToolbar'),
+              bold: t('media.captionBold'),
+              italic: t('media.captionItalic'),
+              strike: t('media.captionStrike'),
+              quote: t('media.captionQuote'),
+              list: t('media.captionList'),
+              orderedList: t('media.captionOrderedList'),
+              hashtag: t('media.captionHashtag'),
+              clearFormatting: t('media.captionClearFormatting'),
+            }}
+            onChange={updateDetails('caption')}
+          />
+        </label>
+        <label className="wide">
+          <span><Sparkles size={15} aria-hidden="true" /> {t('media.highlightsLabel')}</span>
+          <textarea
+            value={details.highlights}
+            disabled={disabled}
+            placeholder={t('media.highlightsPlaceholder')}
+            rows={3}
+            onChange={(event) => updateDetails('highlights')(event.target.value)}
+          />
+        </label>
+        <label className="wide">
+          <span><Lightbulb size={15} aria-hidden="true" /> {t('media.tipsLabel')}</span>
+          <textarea
+            value={details.tips}
+            disabled={disabled}
+            placeholder={t('media.tipsPlaceholder')}
+            rows={3}
+            onChange={(event) => updateDetails('tips')(event.target.value)}
+          />
+        </label>
+      </>
+    );
   };
 
   return (
@@ -546,19 +694,30 @@ export default function StudioMediaPage() {
           </label>
           <label>
             <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
-            <textarea
+            <CaptionEditor
               value={editCaption}
               disabled={isSavingDetails}
               placeholder={t('media.captionPlaceholder')}
               rows={3}
-              onChange={(event) => setEditCaption(event.target.value)}
+              labels={{
+                toolbar: t('media.captionToolbar'),
+                bold: t('media.captionBold'),
+                italic: t('media.captionItalic'),
+                strike: t('media.captionStrike'),
+                quote: t('media.captionQuote'),
+                list: t('media.captionList'),
+                orderedList: t('media.captionOrderedList'),
+                hashtag: t('media.captionHashtag'),
+                clearFormatting: t('media.captionClearFormatting'),
+              }}
+              onChange={setEditCaption}
             />
           </label>
         </div>
       </Modal>
       <Modal
         className="romlek-edit-posting-modal"
-        title={t('media.postSelectedTitle').replace('{count}', String(selectedLibraryMedia.length))}
+        title={t('media.postSelectedTitle').replace('{count}', String(selectedPostMediaIds.length))}
         open={isPostSelectionOpen}
         okText={t('media.postSelected')}
         cancelText={t('media.deleteCancel')}
@@ -568,25 +727,7 @@ export default function StudioMediaPage() {
       >
         <p className="studio-post-selection-body">{t('media.postSelectedBody')}</p>
         <div className="studio-post-details modal-fields">
-          <label>
-            <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
-            <input
-              value={selectionLocation}
-              disabled={isPostingSelection}
-              placeholder={t('media.locationPlaceholder')}
-              onChange={(event) => setSelectionLocation(event.target.value)}
-            />
-          </label>
-          <label>
-            <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
-            <textarea
-              value={selectionCaption}
-              disabled={isPostingSelection}
-              placeholder={t('media.captionPlaceholder')}
-              rows={3}
-              onChange={(event) => setSelectionCaption(event.target.value)}
-            />
-          </label>
+          {renderTripStoryFields(selectionDetails, setSelectionDetails, isPostingSelection)}
         </div>
       </Modal>
       <Modal
@@ -614,28 +755,13 @@ export default function StudioMediaPage() {
             ) : null}
             {previewMedia.kind === 'image' ? <img src={previewMedia.url} alt={previewMedia.alt} /> : null}
             {previewMedia.kind === 'video' ? <HlsVideo src={previewMedia.url} hlsSrc={previewMedia.hlsUrl} poster={previewMedia.poster} autoPlay={false} /> : null}
-            {previewMedia.kind === 'file' ? (() => {
-              const FileIcon = getFileIcon(previewMedia.alt || previewMedia.url);
-              return (
-                <div className="studio-preview-file">
-                  <span className="studio-file-icon">
-                    <FileIcon size={54} aria-hidden="true" />
-                  </span>
-                  <strong>{getFileTypeLabel(previewMedia.alt || previewMedia.url)}</strong>
-                  <p>{previewMedia.alt}</p>
-                  <span className="studio-preview-file-actions">
-                    <a href={previewMedia.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink size={16} aria-hidden="true" />
-                      {t('media.openFile')}
-                    </a>
-                    <a href={previewMedia.url} download={previewMedia.alt || t('media.preview')}>
-                      <Download size={16} aria-hidden="true" />
-                      {t('media.downloadFile')}
-                    </a>
-                  </span>
-                </div>
-              );
-            })() : null}
+            {previewMedia.kind === 'file' ? (
+              <div className="studio-preview-file">
+                <a href={previewMedia.url} target="_blank" rel="noopener noreferrer">
+                  {getFileName(previewMedia)}
+                </a>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Modal>
@@ -691,25 +817,7 @@ export default function StudioMediaPage() {
             </div>
             {isPublicUpload ? (
               <div className="studio-post-details">
-                <label>
-                  <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
-                  <input
-                    value={postLocation}
-                    disabled={isUploading}
-                    placeholder={t('media.locationPlaceholder')}
-                    onChange={(event) => setPostLocation(event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
-                  <textarea
-                    value={postCaption}
-                    disabled={isUploading}
-                    placeholder={t('media.captionPlaceholder')}
-                    rows={3}
-                    onChange={(event) => setPostCaption(event.target.value)}
-                  />
-                </label>
+                {renderTripStoryFields(postDetails, setPostDetails, isUploading)}
               </div>
             ) : null}
           </div>
@@ -747,6 +855,7 @@ export default function StudioMediaPage() {
               </button>
             </div>
           )}
+          {uploadMessage ? <p className="studio-upload-status success">{uploadMessage}</p> : null}
           {uploadError ? <p className="studio-upload-status error">{uploadError}</p> : null}
         </section>
 
@@ -800,7 +909,7 @@ export default function StudioMediaPage() {
                     <Trash2 size={15} aria-hidden="true" />
                     {t('media.deleteSelected')}
                   </button>
-                  <button type="button" className="primary" onClick={openPostSelectionDialog} disabled={!hasSelectedLibraryMedia || deletingMediaId === '__batch__'}>
+                  <button type="button" className="primary" onClick={openPostSelectionDialog} disabled={!hasSelectedPostMedia || deletingMediaId === '__batch__'}>
                     <Globe2 size={15} aria-hidden="true" />
                     {t('media.postSelected')}
                   </button>
@@ -842,22 +951,16 @@ export default function StudioMediaPage() {
                             {isSelected ? <Check size={15} aria-hidden="true" /> : null}
                           </button>
                         ) : null}
-                        <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
-                          {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                          {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} autoPlay={false} /> : null}
-                          {media.kind === 'file' ? (() => {
-                            const FileIcon = getFileIcon(media.alt || media.url);
-                            return (
-                              <span className="studio-file-preview">
-                                <span className="studio-file-icon">
-                                  <FileIcon size={42} aria-hidden="true" />
-                                </span>
-                                <strong>{getFileTypeLabel(media.alt || media.url)}</strong>
-                                <span>{media.alt}</span>
-                              </span>
-                            );
-                          })() : null}
-                        </button>
+                        {media.kind === 'file' ? (
+                          <a className="studio-media-preview" href={media.url} target="_blank" rel="noopener noreferrer" aria-label={t('feed.openDocument').replace('{name}', getFileName(media))}>
+                            <span className="studio-file-preview">{getFileName(media)}</span>
+                          </a>
+                        ) : (
+                          <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
+                            {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
+                            {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} autoPlay={false} /> : null}
+                          </button>
+                        )}
                         <footer>
                           <div>
                             <span><Icon size={15} aria-hidden="true" /> {t(getFilterLabelKey(media.kind))}</span>

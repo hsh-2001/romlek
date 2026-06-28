@@ -1,23 +1,11 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreatePostDto {
-  @ApiPropertyOptional()
-  user_id?: string | null;
-
-  @ApiPropertyOptional()
-  trip_id?: number | string | null;
-
-  @ApiPropertyOptional()
-  album_id?: number | string | null;
-
-  @ApiPropertyOptional()
-  album_title?: string | null;
-
+export class UpdatePostDto {
   @ApiPropertyOptional()
   title?: string | null;
 
-  @ApiProperty()
-  body!: string;
+  @ApiPropertyOptional()
+  body?: string;
 
   @ApiPropertyOptional()
   location?: string | null;
@@ -43,9 +31,12 @@ export class CreatePostDto {
   @ApiPropertyOptional()
   tips?: string | null;
 
-  @ApiPropertyOptional({ default: 'draft' })
+  @ApiPropertyOptional()
   status?: string;
 
   @ApiPropertyOptional({ type: [Number] })
-  media_ids?: Array<number | string>;
+  media_ids_to_add?: Array<number | string>;
+
+  @ApiPropertyOptional({ type: [Number] })
+  media_ids_to_remove?: Array<number | string>;
 }

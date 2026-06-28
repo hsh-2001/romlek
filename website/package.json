@@ -11,6 +11,9 @@
   "dependencies": {
     "@ant-design/nextjs-registry": "^1.3.0",
     "@tailwindcss/postcss": "^4.3.1",
+    "@tiptap/extension-placeholder": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "antd": "^6.4.5",
     "axios": "^1.18.1",
     "hls.js": "^1.6.16",
@@ -18,12 +21,14 @@
     "next": "^15.5.9",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "sanitize-html": "^2.17.5",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/sanitize-html": "^2.16.1",
     "typescript": "^5.8.0"
   }
 }

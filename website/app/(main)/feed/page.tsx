@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Button, Modal } from 'antd';
-import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
+import { Bookmark, CalendarDays, ChevronLeft, ChevronRight, Clock3, Grid2X2, Heart, MapPin, MessageCircle, Sparkles, Wallet } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
 import { MediaPreviewActions } from '@/app/_components/MediaPreviewActions';
+import { RichCaption } from '@/app/_components/RichCaption';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelineMedia, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
@@ -45,11 +46,6 @@ function FeedAlbum({
                 </button>
               ) : null}
               {item.kind === 'video' ? <HlsVideo src={item.url} hlsSrc={item.hlsUrl} poster={item.poster} /> : null}
-              {item.kind === 'file' ? (
-                <a className="feed-media-file" href={item.url} target="_blank" rel="noopener noreferrer">
-                  {item.alt}
-                </a>
-              ) : null}
             </figure>
           ))}
         </div>
@@ -81,6 +77,96 @@ function FeedAlbum({
     </div>
   );
 }
+
+const getDocumentName = (media: TimelineMedia) => {
+  const rawName = media.alt || media.url.split('/').pop() || 'Document';
+
+  try {
+    return decodeURIComponent(rawName);
+  } catch {
+    return rawName;
+  }
+};
+
+function ReferenceDocs({
+  media,
+  labels,
+}: {
+  media: TimelineMedia[];
+  labels: { title: string; open: string };
+}) {
+  if (!media.length) {
+    return null;
+  }
+
+  return (
+    <div className="feed-reference-docs" aria-label={labels.title}>
+      {media.map((item) => (
+        <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" aria-label={labels.open.replace('{name}', getDocumentName(item))}>
+          <span>{getDocumentName(item)}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function FeedCaption({
+  value,
+  labels,
+}: {
+  value: string;
+  labels: { showMore: string; showLess: string };
+}) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [canToggle, setCanToggle] = useState(false);
+
+  useEffect(() => {
+    const content = contentRef.current;
+
+    if (!content) {
+      return;
+    }
+
+    const updateToggleState = () => {
+      const lineHeight = Number.parseFloat(window.getComputedStyle(content).lineHeight);
+      const collapsedHeight = Number.isFinite(lineHeight) ? lineHeight * 3 : 80;
+      setCanToggle(content.scrollHeight > collapsedHeight + 1);
+    };
+
+    updateToggleState();
+
+    const resizeObserver = new ResizeObserver(updateToggleState);
+    resizeObserver.observe(content);
+
+    return () => resizeObserver.disconnect();
+  }, [value]);
+
+  if (!value.trim()) {
+    return null;
+  }
+
+  return (
+    <div className="feed-caption">
+      <div ref={contentRef} className={isExpanded ? 'feed-caption-content expanded' : 'feed-caption-content collapsed'}>
+        <RichCaption value={value} className="feed-card-body" />
+      </div>
+      {canToggle ? (
+        <button type="button" className="feed-caption-toggle" onClick={() => setIsExpanded((current) => !current)}>
+          {isExpanded ? labels.showLess : labels.showMore}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+const getFeedDetailItems = (post: TimelinePost) =>
+  [
+    post.travelDate ? { icon: CalendarDays, value: post.travelDate.slice(0, 10) } : null,
+    post.duration ? { icon: Clock3, value: post.duration } : null,
+    post.travelStyle ? { icon: Sparkles, value: post.travelStyle } : null,
+    post.budget ? { icon: Wallet, value: post.budget } : null,
+  ].filter((item): item is { icon: typeof CalendarDays; value: string } => Boolean(item));
 
 export default function FeedPage() {
   const { user } = useAuth();
@@ -132,7 +218,11 @@ export default function FeedPage() {
       </header>
 
       <section className="feed-list" aria-label={t('feed.title')}>
-        {posts.map((post) => (
+        {posts.map((post) => {
+          const referenceDocs = post.media.filter((media) => media.kind !== 'image' && media.kind !== 'video');
+          const visualMedia = post.media.filter((media) => media.kind === 'image' || media.kind === 'video');
+
+          return (
           <article key={post.id} className="feed-card">
             <div className="feed-card-header">
               <div className="mini-avatar feed-avatar">{post.initials}</div>
@@ -146,10 +236,25 @@ export default function FeedPage() {
               </div>
               <Button type="text" shape="circle" className="save-button" aria-label={t('feed.save')}><Bookmark size={18} aria-hidden="true" /></Button>
             </div>
-            {post.body ? <p className="feed-card-body">{post.body}</p> : null}
-            {post.media.length ? (
+            {post.title ? <h2 className="studio-posted-title">{post.title}</h2> : null}
+            <ReferenceDocs media={referenceDocs} labels={{ title: t('feed.referenceDocs'), open: t('feed.openDocument') }} />
+            <FeedCaption value={post.body || ''} labels={{ showMore: t('feed.showMore'), showLess: t('feed.showLess') }} />
+            {getFeedDetailItems(post).length ? (
+              <div className="feed-story-details">
+                {getFeedDetailItems(post).map((item) => {
+                  const DetailIcon = item.icon;
+                  return (
+                    <span key={item.value}>
+                      <DetailIcon size={14} aria-hidden="true" />
+                      {item.value}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : null}
+            {visualMedia.length ? (
               <FeedAlbum
-                media={post.media}
+                media={visualMedia}
                 labels={{
                   album: t('feed.album'),
                   item: t('feed.albumItem'),
@@ -165,7 +270,8 @@ export default function FeedPage() {
               <Button type="text" aria-label={t('feed.like')}><Heart size={18} aria-hidden="true" /><span>{t('feed.like')}</span></Button>
             </div>
           </article>
-        ))}
+          );
+        })}
       </section>
     </AppShell>
   );

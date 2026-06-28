@@ -2,20 +2,22 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Clapperboard, Home, PenLine, Search, Settings, WalletCards } from 'lucide-react';
+import { Clapperboard, Home, PenLine, Search, Send, Settings, WalletCards } from 'lucide-react';
 import { getInitials } from '@/app/_components/AppShell';
 import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
-type ActiveRoute = 'media';
+type ActiveRoute = 'media' | 'posted';
 
 const navItems = [
   { key: 'media', labelKey: 'nav.media', to: '/studio', icon: Clapperboard },
+  { key: 'posted', labelKey: 'nav.posted', to: '/studio/posted', icon: Send },
 ] as const;
 
 const pageTitleKeys: Record<ActiveRoute, string> = {
   media: 'media.title',
+  posted: 'posted.title',
 };
 
 export function StudioShell({ active, children }: { active: ActiveRoute; children: React.ReactNode }) {
@@ -65,9 +67,18 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
 
       <section className="studio-workspace">
         <header className="studio-topbar">
-          <div>
-            <span className="studio-label">Romlek Travel Studio</span>
-            <strong>{t(pageTitleKeys[active])}</strong>
+          <div className="studio-topbar-main">
+            <div>
+              <span className="studio-label">Romlek Travel Studio</span>
+              <strong>{t(pageTitleKeys[active])}</strong>
+            </div>
+            <nav className="studio-header-tabs" aria-label="Studio sections">
+              {navItems.map((item) => (
+                <Link key={item.to} className={active === item.key ? 'active' : ''} href={item.to}>
+                  {t(item.labelKey)}
+                </Link>
+              ))}
+            </nav>
           </div>
           <div className="studio-topbar-actions">
             <div className="studio-search"><Search size={17} aria-hidden="true" /> {t('nav.search')}</div>

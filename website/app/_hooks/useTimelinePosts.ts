@@ -24,13 +24,22 @@ export type TimelineMedia = {
 
 export type TimelinePost = {
   id: string | number;
+  source?: 'post' | 'upload';
   initials: string;
   name: string;
   username: string;
   time: string;
   createdAt?: string;
+  title?: string;
   body: string;
   location?: string;
+  travelDate?: string;
+  duration?: string;
+  travelStyle?: string;
+  companions?: string;
+  budget?: string;
+  highlights?: string;
+  tips?: string;
   albumId?: string;
   albumCode?: string;
   albumTitle?: string;
@@ -172,7 +181,10 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
   }
 
   const initialUrl = resolveMediaUrl(resolvedRawUrl);
-  const alt = firstString(media.alt, media.caption, media.original_name, media.originalName, media.file_name, media.fileName) || 'Post media';
+  const alt =
+    firstString(media.alt, media.original_name, media.originalName, media.file_name, media.fileName, media.name, media.filename) ||
+    firstString(media.caption) ||
+    'Post media';
   const caption = firstString(media.caption, media.description, media.body, media.content);
   const location = firstString(media.location, media.place, media.store, media.branch, media.address);
   const albumId = firstString(media.album_id, media.albumId);
@@ -240,6 +252,7 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
   const albumTitle = firstString(post.album_title, post.albumTitle, album.title);
   const name = firstString(author.name, author.display_name, author.displayName, post.name, post.author_name, post.authorName) || 'Romlek';
   const username = firstString(author.username, post.username, post.author_username, post.authorUsername) || 'romlek';
+  const title = firstString(post.title, post.trip_title, post.tripTitle, album.title);
   const body = firstString(post.body, post.content, post.text, post.caption, post.description);
   const mediaItems = getMediaItems(post, options);
   const location =
@@ -251,13 +264,22 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
 
   return {
     id,
+    source: 'post',
     initials: getInitials(name),
     name,
     username,
     time: createdAt ? formatRelativeTime(createdAt) : firstString(post.time) || 'now',
     createdAt: createdAt || undefined,
+    title: title || undefined,
     body,
     location: location || undefined,
+    travelDate: firstString(post.travel_date, post.travelDate) || undefined,
+    duration: firstString(post.duration, post.trip_duration, post.tripDuration) || undefined,
+    travelStyle: firstString(post.travel_style, post.travelStyle) || undefined,
+    companions: firstString(post.companions, post.travel_companions, post.travelCompanions) || undefined,
+    budget: firstString(post.budget, post.trip_budget, post.tripBudget) || undefined,
+    highlights: firstString(post.highlights, post.trip_highlights, post.tripHighlights) || undefined,
+    tips: firstString(post.tips, post.travel_tips, post.travelTips) || undefined,
     albumId: albumId || undefined,
     albumCode: albumCode || undefined,
     albumTitle: albumTitle || undefined,
@@ -281,6 +303,7 @@ const normalizeUploadAsPost = (media: ApiRecord, index: number, options: Timelin
 
   return {
     id: firstString(media.id, media.file_path, media.key) || firstNumber(media.id) || `upload-${index}`,
+    source: 'upload',
     initials: getInitials(name),
     name,
     username,
