@@ -4,7 +4,6 @@ import { type ChangeEvent, type Dispatch, type SetStateAction, useEffect, useMem
 import { Dropdown, Modal } from 'antd';
 import {
   FileText,
-  Pencil,
   Globe2,
   Image as ImageIcon,
   Lock,
@@ -184,10 +183,6 @@ export default function StudioMediaPage() {
   const [selectedFiles, setSelectedFiles] = useState<SelectedUploadFile[]>([]);
   const [isPublicUpload, setIsPublicUpload] = useState(false);
   const [postDetails, setPostDetails] = useState<TripStoryDetails>(() => emptyTripStoryDetails());
-  const [editingMedia, setEditingMedia] = useState<TimelineMedia | null>(null);
-  const [editLocation, setEditLocation] = useState('');
-  const [editCaption, setEditCaption] = useState('');
-  const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isPostSelectionOpen, setIsPostSelectionOpen] = useState(false);
   const [selectionDetails, setSelectionDetails] = useState<TripStoryDetails>(() => emptyTripStoryDetails());
   const [isPostingSelection, setIsPostingSelection] = useState(false);
@@ -543,45 +538,6 @@ export default function StudioMediaPage() {
     });
   };
 
-  const openPostingDetailsEditor = (media: TimelineMedia) => {
-    setEditingMedia(media);
-    setEditLocation(media.location || '');
-    setEditCaption(media.caption || '');
-    setUploadError('');
-    setUploadMessage('');
-  };
-
-  const savePostingDetails = async () => {
-    if (!editingMedia) {
-      return;
-    }
-
-    const location = editLocation.trim();
-    const caption = editCaption.trim();
-    if (!location || !caption) {
-      setUploadError(t('media.postDetailsRequired'));
-      return;
-    }
-
-    setIsSavingDetails(true);
-    setUploadError('');
-    setUploadMessage('');
-
-    try {
-      await api(`/upload/${encodeURIComponent(editingMedia.id)}/posting-details`, {
-        method: 'PATCH',
-        body: { location, caption },
-      });
-      setEditingMedia(null);
-      setUploadMessage(t('media.postDetailsUpdated'));
-      setRefreshKey((value) => value + 1);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : t('media.postDetailsUpdateError'));
-    } finally {
-      setIsSavingDetails(false);
-    }
-  };
-
   const openPostSelectionDialog = () => {
     if (!selectedPostMediaIds.length) {
       return;
@@ -748,49 +704,6 @@ export default function StudioMediaPage() {
   return (
     <StudioShell active="media">
       {modalContextHolder}
-      <Modal
-        className="romlek-edit-posting-modal"
-        title={t('media.editPostingDetails')}
-        open={Boolean(editingMedia)}
-        okText={t('media.savePostingDetails')}
-        cancelText={t('media.deleteCancel')}
-        confirmLoading={isSavingDetails}
-        onOk={() => void savePostingDetails()}
-        onCancel={() => setEditingMedia(null)}
-      >
-        <div className="studio-post-details modal-fields">
-          <label>
-            <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
-            <input
-              value={editLocation}
-              disabled={isSavingDetails}
-              placeholder={t('media.locationPlaceholder')}
-              onChange={(event) => setEditLocation(event.target.value)}
-            />
-          </label>
-          <label>
-            <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
-            <CaptionEditor
-              value={editCaption}
-              disabled={isSavingDetails}
-              placeholder={t('media.captionPlaceholder')}
-              rows={3}
-              labels={{
-                toolbar: t('media.captionToolbar'),
-                bold: t('media.captionBold'),
-                italic: t('media.captionItalic'),
-                strike: t('media.captionStrike'),
-                quote: t('media.captionQuote'),
-                list: t('media.captionList'),
-                orderedList: t('media.captionOrderedList'),
-                hashtag: t('media.captionHashtag'),
-                clearFormatting: t('media.captionClearFormatting'),
-              }}
-              onChange={setEditCaption}
-            />
-          </label>
-        </div>
-      </Modal>
       <Modal
         className="romlek-edit-posting-modal"
         title={t('media.postSelectedTitle').replace('{count}', String(selectedPostMediaIds.length))}
@@ -1064,16 +977,6 @@ export default function StudioMediaPage() {
                                 trigger={['click']}
                                 menu={{
                                   items: [
-                                    ...(media.isPublic
-                                      ? [
-                                          {
-                                            key: 'edit',
-                                            icon: <Pencil size={15} aria-hidden="true" />,
-                                            label: t('media.editPostingDetails'),
-                                            disabled: deletingMediaId === '__batch__',
-                                          },
-                                        ]
-                                      : []),
                                     {
                                       key: 'delete',
                                       icon: <Trash2 size={16} aria-hidden="true" />,
@@ -1084,10 +987,6 @@ export default function StudioMediaPage() {
                                   ],
                                   onClick: ({ key, domEvent }) => {
                                     domEvent.stopPropagation();
-
-                                    if (key === 'edit') {
-                                      openPostingDetailsEditor(media);
-                                    }
 
                                     if (key === 'delete') {
                                       handleDelete(media);
