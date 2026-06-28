@@ -224,7 +224,11 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
   const name = firstString(author.name, author.display_name, author.displayName, post.name, post.author_name, post.authorName) || 'Romlek';
   const username = firstString(author.username, post.username, post.author_username, post.authorUsername) || 'romlek';
   const body = firstString(post.body, post.content, post.text, post.caption, post.description);
-  const location = firstString(post.location, post.place, post.store, post.branch, post.address);
+  const mediaItems = getMediaItems(post, options);
+  const location =
+    firstString(post.location, post.place, post.store, post.branch, post.address) ||
+    mediaItems.find((media) => media.location)?.location ||
+    '';
   const createdAt = firstString(post.created_at, post.createdAt, post.updated_at, post.updatedAt);
   const id = firstString(post.id, post.post_id, post.postId) || firstNumber(post.id, post.post_id, post.postId) || `api-post-${index}`;
 
@@ -236,7 +240,7 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
     time: createdAt ? formatRelativeTime(createdAt) : firstString(post.time) || 'now',
     body,
     location: location || undefined,
-    media: getMediaItems(post, options),
+    media: mediaItems,
   };
 };
 
@@ -272,6 +276,23 @@ export const useTimelinePosts = (refreshKey = 0, options: TimelinePostOptions = 
 
   useEffect(() => {
     const fetchPosts = async () => {
+      if (options.uploadedBy) {
+        try {
+          const searchParams = new URLSearchParams();
+          if (options.publicOnly) {
+            searchParams.set('public_only', 'true');
+          }
+
+          searchParams.set('uploaded_by', options.uploadedBy);
+          const payload = await api<unknown>(`/upload?${searchParams.toString()}`);
+          setPosts(getApiItems(payload).map((media, index) => normalizeUploadAsPost(media, index, options)).filter((post): post is TimelinePost => Boolean(post)));
+        } catch {
+          setPosts([]);
+        }
+
+        return;
+      }
+
       try {
         const query = options.publicOnly ? '?public_only=true' : '';
         const payload = await api<unknown>(`/posts${query}`);

@@ -4,9 +4,10 @@ import { CreatePostDto } from './dto/create-post.dto';
 
 type PostRow = {
   id: string;
-  user_id: number | null;
+  user_id: string | null;
   trip_id: number | null;
   body: string;
+  location: string | null;
   status: string;
   published_at: Date | null;
   created_at: Date;
@@ -24,6 +25,7 @@ export class PostsRepository {
         p.user_id,
         p.trip_id,
         p.body,
+        p.location,
         p.status,
         p.published_at,
         p.created_at,
@@ -69,8 +71,8 @@ export class PostsRepository {
       LEFT JOIN users u ON u.id = p.user_id
       LEFT JOIN post_media pm ON pm.post_id = p.id
       LEFT JOIN media m ON m.id = pm.media_id
-      LEFT JOIN media_posting_details posting_details ON posting_details.media_id = m.id
         ${options.publicOnly ? 'AND m.is_public = TRUE' : ''}
+      LEFT JOIN media_posting_details posting_details ON posting_details.media_id = m.id
       GROUP BY p.id, u.id
       ${options.publicOnly ? 'HAVING COUNT(m.id) > 0' : ''}
       ORDER BY p.created_at DESC, p.id DESC
@@ -80,38 +82,44 @@ export class PostsRepository {
   }
 
   async create(post: CreatePostDto, mediaIds: number[]) {
-    const result = await this.databaseService.query<PostRow>(
-      `
-      INSERT INTO posts (user_id, trip_id, body, status, published_at)
-      VALUES ($1, $2, $3, $4, CASE WHEN $4 = 'published' THEN NOW() ELSE NULL END)
-      RETURNING *
-    `,
-      [
-        this.toNullableId(post.user_id),
-        this.toNullableId(post.trip_id),
-        post.body,
-        post.status || 'draft',
-      ],
-    );
-    const createdPost = result.rows[0];
-
-    if (mediaIds.length) {
-      await Promise.all(
-        mediaIds.map((mediaId, index) =>
-          this.databaseService.query(
-            `
-            INSERT INTO post_media (post_id, media_id, sort_order)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (post_id, media_id)
-            DO UPDATE SET sort_order = EXCLUDED.sort_order
-          `,
-            [createdPost.id, mediaId, index],
-          ),
-        ),
+    try {
+      const result = await this.databaseService.query<PostRow>(
+        `
+        INSERT INTO posts (user_id, trip_id, body, location, status, published_at)
+        VALUES ($1, $2, $3, $4, $5::varchar, CASE WHEN $5::text = 'published' THEN NOW() ELSE NULL END)
+        RETURNING *
+      `,
+        [
+          this.toNullableId(post.user_id),
+          this.toNullableId(post.trip_id),
+          post.body,
+          post.location?.trim() || null,
+          post.status || 'draft',
+        ],
       );
-    }
+      const createdPost = result.rows[0];
 
-    return createdPost;
+      if (mediaIds.length) {
+        await Promise.all(
+          mediaIds.map((mediaId, index) =>
+            this.databaseService.query(
+              `
+              INSERT INTO post_media (post_id, media_id, sort_order)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (post_id, media_id)
+              DO UPDATE SET sort_order = EXCLUDED.sort_order
+            `,
+              [createdPost.id, mediaId, index],
+            ),
+          ),
+        );
+      }
+
+      return createdPost;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
   }
 
   private toNullableId(value?: number | string | null) {

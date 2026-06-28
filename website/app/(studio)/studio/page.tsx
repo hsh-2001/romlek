@@ -32,6 +32,13 @@ import { useTimelinePosts, type TimelineMedia } from '@/app/_hooks/useTimelinePo
 
 type MediaFilter = 'all' | TimelineMedia['kind'];
 type UploadPhase = 'idle' | 'uploading' | 'processing' | 'complete';
+type UploadResponse = {
+  files?: Array<{
+    media?: {
+      id?: string | number;
+    };
+  }>;
+};
 
 const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file'];
 
@@ -78,6 +85,12 @@ const formatFileSize = (size: number) => {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getUploadedMediaIds = (payload: UploadResponse) => {
+  return (payload.files ?? [])
+    .map((file) => file.media?.id)
+    .filter((id): id is string | number => id !== undefined && id !== null);
 };
 
 export default function StudioMediaPage() {
@@ -170,6 +183,23 @@ export default function StudioMediaPage() {
     setIsSelectionMode(false);
   };
 
+  const createAlbumPost = async (mediaIds: Array<string | number>, details: { location: string; caption: string }) => {
+    if (!mediaIds.length) {
+      return;
+    }
+
+    await api('/posts', {
+      method: 'POST',
+      body: {
+        user_id: uploaderId,
+        body: details.caption,
+        location: details.location,
+        status: 'published',
+        media_ids: mediaIds,
+      },
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedFiles.length) {
       return;
@@ -204,7 +234,7 @@ export default function StudioMediaPage() {
     uploadAbortControllerRef.current = new AbortController();
 
     try {
-      await api('/upload', {
+      const payload = await api<UploadResponse>('/upload', {
         method: 'POST',
         body: formData,
         signal: uploadAbortControllerRef.current.signal,
@@ -220,6 +250,12 @@ export default function StudioMediaPage() {
           }
         },
       });
+      if (isPublicUpload) {
+        await createAlbumPost(getUploadedMediaIds(payload), {
+          location: postLocation.trim(),
+          caption: postCaption.trim(),
+        });
+      }
       setUploadPhase('complete');
       setUploadProgress(100);
       clearSelectedFiles();
@@ -391,6 +427,10 @@ export default function StudioMediaPage() {
           }),
         ),
       );
+      await createAlbumPost(selectedLibraryMedia.map((media) => media.id), {
+        location,
+        caption,
+      });
       setIsPostSelectionOpen(false);
       clearMediaSelection();
       setUploadMessage(t('media.postSelectedSuccess').replace('{count}', String(selectedLibraryMedia.length)));

@@ -85,7 +85,7 @@ export function PreferenceControls({
         onClick: selectPreference,
         selectedKeys: [`locale-${locale}`, `theme-${theme}`],
       }}
-      overlayClassName="romlek-preference-dropdown"
+      classNames={{ root: 'romlek-preference-dropdown' }}
       placement="bottomRight"
       trigger={['click']}
     >
