@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "explore": "Explore",
+    "media": "Media",
     "notifications": "Notifications",
     "messages": "Messages",
     "profile": "Profile",
@@ -73,6 +74,26 @@
     "searchPlaceholder": "Search people, posts, and topics",
     "topics": "Topics for you",
     "latest": "Latest conversations"
+  },
+  "media": {
+    "title": "Media",
+    "subtitle": "Review uploaded images, videos, and files from the media feed.",
+    "all": "All",
+    "images": "Images",
+    "videos": "Videos",
+    "files": "Files",
+    "uploadTitle": "Upload media",
+    "uploadBody": "Add images, videos, or files to your media library.",
+    "chooseFiles": "Choose files",
+    "noFilesSelected": "No files selected",
+    "filesSelected": "{count} file(s) selected",
+    "clearFiles": "Clear",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "uploadSuccess": "Upload complete. The media library has been refreshed.",
+    "uploadError": "Upload failed. Please try again.",
+    "emptyTitle": "No media yet",
+    "emptyBody": "Uploaded images and videos will appear here."
   },
   "notifications": {
     "title": "Notifications",

@@ -110,7 +110,7 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
         <video
           ref={videoRef}
           poster={poster}
-          autoPlay
+          autoPlay={false}
           controls
           loop
           muted

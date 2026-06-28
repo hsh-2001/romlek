@@ -233,7 +233,7 @@ const normalizeUploadAsPost = (media: ApiRecord, index: number): TimelinePost | 
   };
 };
 
-export const useTimelinePosts = () => {
+export const useTimelinePosts = (refreshKey = 0) => {
   const { api } = useAuth();
   const [posts, setPosts] = useState<TimelinePost[]>([]);
 
@@ -259,7 +259,7 @@ export const useTimelinePosts = () => {
     };
 
     void fetchPosts();
-  }, [api]);
+  }, [api, refreshKey]);
 
   return posts;
 };

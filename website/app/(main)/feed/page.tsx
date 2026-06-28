@@ -5,13 +5,15 @@ import { Button, Input } from 'antd';
 import { Bookmark, Heart, ImagePlus, MessageCircle, Send, Sparkles } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
-import { StudioShell } from '@/app/_components/StudioShell';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
+import { redirect } from 'next/dist/client/components/redirect';
+import { useRouter } from 'next/dist/client/components/navigation';
 
 export default function FeedPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const { t } = usePreferences();
   const [composer, setComposer] = useState('');
   const [activeFeedTab, setActiveFeedTab] = useState('for-you');
@@ -57,7 +59,9 @@ export default function FeedPage() {
         <div className="composer-body">
           <Input.TextArea className="composer-input" value={composer} autoSize={{ minRows: 3, maxRows: 6 }} placeholder={t('feed.composer')} onChange={(event) => setComposer(event.target.value)} />
           <div className="composer-actions">
-            <Button type="text" className="composer-tool" aria-label={t('feed.addMedia')}><ImagePlus size={18} aria-hidden="true" /> {t('feed.addMedia')}</Button>
+            <Button onClick={() => {
+              router.push('/media');
+            }} type="text" className="composer-tool" aria-label={t('feed.addMedia')}><ImagePlus size={18} aria-hidden="true" /> {t('feed.addMedia')}</Button>
             <Button className="home-post-small" shape="round" type="primary">
               <Send size={16} aria-hidden="true" />
               {t('nav.post')}
