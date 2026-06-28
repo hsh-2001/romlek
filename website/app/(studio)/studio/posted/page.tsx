@@ -305,6 +305,18 @@ export default function StudioPostedPage() {
     setMediaIdsToRemove((currentIds) => (currentIds.includes(mediaId) ? currentIds.filter((id) => id !== mediaId) : getUniqueIds([...currentIds, mediaId])));
   };
 
+  const addNewFiles = (files: File[]) => {
+    if (!files.length) {
+      return;
+    }
+
+    setNewFilesToAdd((currentFiles) => getUniqueFiles([...currentFiles, ...files]));
+  };
+
+  const removeNewFile = (fileKey: string) => {
+    setNewFilesToAdd((currentFiles) => currentFiles.filter((file) => getFileKey(file) !== fileKey));
+  };
+
   const savePost = async () => {
     if (!editingPost) {
       return;
@@ -508,7 +520,10 @@ export default function StudioPostedPage() {
                     type="file"
                     multiple
                     disabled={isSavingPost}
-                    onChange={(event) => setNewFilesToAdd(getUniqueFiles(Array.from(event.target.files ?? [])))}
+                    onChange={(event) => {
+                      addNewFiles(Array.from(event.target.files ?? []));
+                      event.target.value = '';
+                    }}
                   />
                   <Plus size={16} aria-hidden="true" />
                   <strong>{t('posted.chooseNewFiles')}</strong>
@@ -518,7 +533,10 @@ export default function StudioPostedPage() {
                   <div className="studio-post-new-file-list">
                     {newFilesToAdd.map((file) => (
                       <span key={getFileKey(file)}>
-                        {file.name}
+                        <span>{file.name}</span>
+                        <button type="button" disabled={isSavingPost} aria-label={t('media.deleteMedia')} onClick={() => removeNewFile(getFileKey(file))}>
+                          <X size={13} aria-hidden="true" />
+                        </button>
                       </span>
                     ))}
                   </div>

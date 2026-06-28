@@ -52,6 +52,12 @@ type UploadResponse = {
     };
   }>;
 };
+type SelectedUploadFile = {
+  file: File;
+  key: string;
+  kind: 'image' | 'video' | 'file';
+  previewUrl?: string;
+};
 
 const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file', 'albums'];
 
@@ -89,6 +95,25 @@ const getUploadedMediaIds = (payload: UploadResponse) => {
   return (payload.files ?? [])
     .map((file) => file.media?.id)
     .filter((id): id is string | number => id !== undefined && id !== null);
+};
+
+const getFileKey = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
+
+const getSelectedFileKind = (file: File): 'image' | 'video' | 'file' => {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('video/')) return 'video';
+  return 'file';
+};
+
+const createSelectedUploadFile = (file: File): SelectedUploadFile => {
+  const kind = getSelectedFileKind(file);
+
+  return {
+    file,
+    key: getFileKey(file),
+    kind,
+    previewUrl: kind === 'file' ? undefined : URL.createObjectURL(file),
+  };
 };
 
 const getUniqueMediaIds = (items: TimelineMedia[]) => Array.from(new Set(items.map((media) => media.id)));
@@ -156,7 +181,7 @@ export default function StudioMediaPage() {
   const [modal, modalContextHolder] = Modal.useModal();
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeFilter, setActiveFilter] = useState<MediaFilter>('all');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedUploadFile[]>([]);
   const [isPublicUpload, setIsPublicUpload] = useState(false);
   const [postDetails, setPostDetails] = useState<TripStoryDetails>(() => emptyTripStoryDetails());
   const [editingMedia, setEditingMedia] = useState<TimelineMedia | null>(null);
@@ -178,6 +203,7 @@ export default function StudioMediaPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const uploadWasCanceledRef = useRef(false);
+  const selectedFilesRef = useRef<SelectedUploadFile[]>([]);
   const uploaderId = user?.id !== undefined && user?.id !== null ? String(user.id) : '';
   const posts = useTimelinePosts(refreshKey, { uploadedBy: uploaderId || '__missing_user__' });
   const mediaItems = useMemo(
@@ -263,18 +289,53 @@ export default function StudioMediaPage() {
   const canUpload = selectedFiles.length > 0 && Boolean(uploaderId) && !isUploading && (!isPublicUpload || hasPostDetails);
 
   useEffect(() => {
+    return () => {
+      selectedFilesRef.current.forEach((item) => {
+        if (item.previewUrl) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    selectedFilesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
+  useEffect(() => {
     setSelectedMediaIds((currentIds) => currentIds.filter((id) => mediaItems.some((media) => media.id === id)));
   }, [mediaItems]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSelectedFiles(Array.from(event.target.files ?? []));
+    const nextFiles = Array.from(event.target.files ?? []);
+    setSelectedFiles((currentFiles) => {
+      const currentKeys = new Set(currentFiles.map((item) => item.key));
+      const nextItems = nextFiles
+        .filter((file) => {
+          const fileKey = getFileKey(file);
+          if (currentKeys.has(fileKey)) {
+            return false;
+          }
+
+          currentKeys.add(fileKey);
+          return true;
+        })
+        .map(createSelectedUploadFile);
+      return [...currentFiles, ...nextItems];
+    });
     setUploadProgress(0);
     setUploadPhase('idle');
     setUploadMessage('');
     setUploadError('');
+    event.target.value = '';
   };
 
   const clearSelectedFiles = () => {
+    selectedFilesRef.current.forEach((item) => {
+      if (item.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    });
     setSelectedFiles([]);
     setUploadProgress(0);
     setUploadPhase('idle');
@@ -283,6 +344,21 @@ export default function StudioMediaPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const removeSelectedFile = (fileKey: string) => {
+    setSelectedFiles((currentFiles) => {
+      const fileToRemove = currentFiles.find((item) => item.key === fileKey);
+      if (fileToRemove?.previewUrl) {
+        URL.revokeObjectURL(fileToRemove.previewUrl);
+      }
+
+      return currentFiles.filter((item) => item.key !== fileKey);
+    });
+    setUploadProgress(0);
+    setUploadPhase('idle');
+    setUploadMessage('');
+    setUploadError('');
   };
 
   const toggleMediaSelection = (mediaId: string) => {
@@ -332,7 +408,7 @@ export default function StudioMediaPage() {
     }
 
     const formData = new FormData();
-    selectedFiles.forEach((file) => formData.append('files', file));
+    selectedFiles.forEach((item) => formData.append('files', item.file));
     formData.append('path', 'media');
     formData.append('is_public', String(isPublicUpload));
     formData.append('uploaded_by', uploaderId);
@@ -782,11 +858,21 @@ export default function StudioMediaPage() {
           </label>
           {selectedFiles.length ? (
             <div className="studio-upload-list">
-              {selectedFiles.map((file) => (
-                <span key={`${file.name}-${file.size}-${file.lastModified}`}>
-                  {file.name}
-                  <small>{formatFileSize(file.size)}</small>
-                </span>
+              {selectedFiles.map((item) => (
+                <article key={item.key} className={`studio-upload-file-tile ${item.kind}`}>
+                  <div className="studio-upload-file-preview">
+                    {item.kind === 'image' && item.previewUrl ? <img src={item.previewUrl} alt={item.file.name} /> : null}
+                    {item.kind === 'video' && item.previewUrl ? <video src={item.previewUrl} muted playsInline controls /> : null}
+                    {item.kind === 'file' ? <span>{item.file.name}</span> : null}
+                  </div>
+                  <div className="studio-upload-file-meta">
+                    <strong>{item.file.name}</strong>
+                    <small>{formatFileSize(item.file.size)}</small>
+                  </div>
+                  <button type="button" disabled={isUploading} aria-label={t('media.deleteMedia')} onClick={() => removeSelectedFile(item.key)}>
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                </article>
               ))}
             </div>
           ) : null}
