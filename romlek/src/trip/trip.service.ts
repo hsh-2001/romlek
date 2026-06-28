@@ -13,13 +13,13 @@ export class TripService implements ITripService {
     return this.tripRepository.createTrip(trip);
   }
   getTripById(id: string): Promise<TripRow | null> {
-    throw new Error('Method not implemented.');
+    return this.tripRepository.getTripById(id);
   }
-  getAllTrips(): Promise<TripRow[] | null> {
-    return this.tripRepository.getAllTrips();
+  getAllTrips(userId?: string): Promise<TripRow[] | null> {
+    return this.tripRepository.getAllTrips(userId);
   }
   updateTrip(id: string, trip: UpdateTripDtoClass): Promise<TripRow | null> {
-    throw new Error('Method not implemented.');
+    return this.tripRepository.updateTrip(id, trip);
   }
   deleteTrip(id: string): Promise<boolean> {
     throw new Error('Method not implemented.');

@@ -2,21 +2,23 @@
 
 import Link from 'next/link';
 import { Button } from 'antd';
-import { Clapperboard, Home, PenLine, Search, Send, Settings, WalletCards } from 'lucide-react';
+import { CalendarDays, Clapperboard, Home, PenLine, Search, Send, Settings, WalletCards } from 'lucide-react';
 import { getInitials } from '@/app/_components/AppShell';
 import { PreferenceControls } from '@/app/_components/PreferenceControls';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
-type ActiveRoute = 'media' | 'posted';
+type ActiveRoute = 'media' | 'planning' | 'posted';
 
 const navItems = [
   { key: 'media', labelKey: 'nav.media', to: '/studio', icon: Clapperboard },
+  { key: 'planning', labelKey: 'nav.planning', to: '/studio/planning', icon: CalendarDays },
   { key: 'posted', labelKey: 'nav.posted', to: '/studio/posted', icon: Send },
 ] as const;
 
 const pageTitleKeys: Record<ActiveRoute, string> = {
   media: 'media.title',
+  planning: 'planning.title',
   posted: 'posted.title',
 };
 
