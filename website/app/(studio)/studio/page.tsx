@@ -30,7 +30,7 @@ import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelineMedia } from '@/app/_hooks/useTimelinePosts';
 
-type MediaFilter = 'all' | TimelineMedia['kind'];
+type MediaFilter = 'all' | TimelineMedia['kind'] | 'album';
 type UploadPhase = 'idle' | 'uploading' | 'processing' | 'complete';
 type UploadResponse = {
   files?: Array<{
@@ -40,12 +40,13 @@ type UploadResponse = {
   }>;
 };
 
-const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file'];
+const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file', 'album'];
 
 const getFilterLabelKey = (filter: MediaFilter) => {
   if (filter === 'image') return 'media.images';
   if (filter === 'video') return 'media.videos';
   if (filter === 'file') return 'media.files';
+  if (filter === 'album') return 'media.albums';
   return 'media.all';
 };
 
@@ -111,6 +112,7 @@ export default function StudioMediaPage() {
   const [selectionLocation, setSelectionLocation] = useState('');
   const [selectionCaption, setSelectionCaption] = useState('');
   const [isPostingSelection, setIsPostingSelection] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState<TimelineMedia | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle');
@@ -130,13 +132,24 @@ export default function StudioMediaPage() {
         post.media.map((media) => ({
           ...media,
           postId: post.id,
+          albumSize: post.media.length,
           author: post.name,
           time: post.time,
         })),
       ),
     [posts],
   );
-  const filteredMedia = mediaItems.filter((media) => activeFilter === 'all' || media.kind === activeFilter);
+  const filteredMedia = mediaItems.filter((media) => {
+    if (activeFilter === 'all') {
+      return true;
+    }
+
+    if (activeFilter === 'album') {
+      return media.albumSize > 1;
+    }
+
+    return media.kind === activeFilter;
+  });
   const filteredMediaIds = filteredMedia.map((media) => media.id);
   const selectedMedia = mediaItems.filter((media) => selectedMediaIds.includes(media.id));
   const selectedLibraryMedia = selectedMedia.filter((media) => !media.isPublic);
@@ -510,6 +523,36 @@ export default function StudioMediaPage() {
           </label>
         </div>
       </Modal>
+      <Modal
+        className="romlek-media-preview-modal"
+        title={previewMedia?.alt || t('media.preview')}
+        open={Boolean(previewMedia)}
+        footer={null}
+        width="min(1040px, calc(100vw - 24px))"
+        onCancel={() => setPreviewMedia(null)}
+      >
+        {previewMedia ? (
+          <div className={`studio-preview-content ${previewMedia.kind}`}>
+            {previewMedia.kind === 'image' ? <img src={previewMedia.url} alt={previewMedia.alt} /> : null}
+            {previewMedia.kind === 'video' ? <HlsVideo src={previewMedia.url} hlsSrc={previewMedia.hlsUrl} poster={previewMedia.poster} /> : null}
+            {previewMedia.kind === 'file' ? (() => {
+              const FileIcon = getFileIcon(previewMedia.alt || previewMedia.url);
+              return (
+                <div className="studio-preview-file">
+                  <span className="studio-file-icon">
+                    <FileIcon size={54} aria-hidden="true" />
+                  </span>
+                  <strong>{getFileTypeLabel(previewMedia.alt || previewMedia.url)}</strong>
+                  <p>{previewMedia.alt}</p>
+                  <a href={previewMedia.url} target="_blank" rel="noopener noreferrer">
+                    {t('media.openFile')}
+                  </a>
+                </div>
+              );
+            })() : null}
+          </div>
+        ) : null}
+      </Modal>
       <section className="studio-media-page">
 
         <section className="studio-media-upload" aria-label={t('media.uploadTitle')}>
@@ -687,22 +730,22 @@ export default function StudioMediaPage() {
                       {isSelected ? <Check size={15} aria-hidden="true" /> : null}
                     </button>
                   ) : null}
-                  <div className="studio-media-preview">
+                  <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
                     {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
                     {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
                     {media.kind === 'file' ? (() => {
                       const FileIcon = getFileIcon(media.alt || media.url);
                       return (
-                        <a className="studio-file-preview" href={media.url} target="_blank" rel="noopener noreferrer">
+                        <span className="studio-file-preview">
                           <span className="studio-file-icon">
                             <FileIcon size={42} aria-hidden="true" />
                           </span>
                           <strong>{getFileTypeLabel(media.alt || media.url)}</strong>
                           <span>{media.alt}</span>
-                        </a>
+                        </span>
                       );
                     })() : null}
-                  </div>
+                  </button>
                   <footer>
                     <div>
                       <span><Icon size={15} aria-hidden="true" /> {t(getFilterLabelKey(media.kind))}</span>

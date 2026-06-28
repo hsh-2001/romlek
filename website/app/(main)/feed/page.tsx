@@ -1,12 +1,73 @@
 'use client';
 
+import { useState, type CSSProperties } from 'react';
 import { Button } from 'antd';
-import { Bookmark, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
+import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
-import { useTimelinePosts, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
+import { useTimelinePosts, type TimelineMedia, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
+
+function FeedAlbum({ media, labels }: { media: TimelineMedia[]; labels: { album: string; item: string; previous: string; next: string } }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const hasMultiple = media.length > 1;
+  const activeMedia = media[activeIndex];
+  const goToPrevious = () => setActiveIndex((index) => (index === 0 ? media.length - 1 : index - 1));
+  const goToNext = () => setActiveIndex((index) => (index === media.length - 1 ? 0 : index + 1));
+  const trackStyle = { '--active-slide': activeIndex } as CSSProperties;
+
+  return (
+    <div className={`feed-album count-${Math.min(media.length, 5)} ${hasMultiple ? 'album' : 'single'}`}>
+      {hasMultiple ? (
+        <div className="feed-album-header">
+          <span><Grid2X2 size={14} aria-hidden="true" /> {labels.album}</span>
+          <small className="feed-album-count desktop">{media.length} {labels.item}</small>
+          <small className="feed-album-count mobile">{activeIndex + 1} / {media.length}</small>
+        </div>
+      ) : null}
+      <div className="feed-album-stage">
+        <div className="feed-album-track" style={trackStyle}>
+          {media.map((item, index) => (
+            <figure key={item.id} className={`feed-media-item ${item.kind}`}>
+              {item.kind === 'image' ? <img src={item.url} alt={item.alt} loading="lazy" decoding="async" /> : null}
+              {item.kind === 'video' ? <HlsVideo src={item.url} hlsSrc={item.hlsUrl} poster={item.poster} /> : null}
+              {item.kind === 'file' ? (
+                <a className="feed-media-file" href={item.url} target="_blank" rel="noopener noreferrer">
+                  {item.alt}
+                </a>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+        {hasMultiple ? (
+          <>
+            <button className="feed-album-nav previous" type="button" onClick={goToPrevious} aria-label={labels.previous}>
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <button className="feed-album-nav next" type="button" onClick={goToNext} aria-label={labels.next}>
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
+          </>
+        ) : null}
+      </div>
+      {hasMultiple ? (
+        <div className="feed-album-dots" aria-label={`${labels.album}: ${activeMedia?.alt || labels.item}`}>
+          {media.map((item, index) => (
+            <button
+              key={item.id}
+              className={index === activeIndex ? 'active' : undefined}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              aria-label={`${labels.item} ${index + 1}`}
+              aria-current={index === activeIndex ? 'true' : undefined}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function FeedPage() {
   const { user } = useAuth();
@@ -48,19 +109,15 @@ export default function FeedPage() {
             </div>
             {post.body ? <p className="feed-card-body">{post.body}</p> : null}
             {post.media.length ? (
-              <div className={`feed-media-grid ${post.media.length === 1 ? 'single' : ''}`}>
-                {post.media.map((media) => (
-                  <figure key={media.id} className={`feed-media-item ${media.kind}`}>
-                    {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                    {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
-                    {media.kind === 'file' ? (
-                      <a className="feed-media-file" href={media.url} target="_blank" rel="noopener noreferrer">
-                        {media.alt}
-                      </a>
-                    ) : null}
-                  </figure>
-                ))}
-              </div>
+              <FeedAlbum
+                media={post.media}
+                labels={{
+                  album: t('feed.album'),
+                  item: t('feed.albumItem'),
+                  previous: t('feed.previousMedia'),
+                  next: t('feed.nextMedia'),
+                }}
+              />
             ) : null}
             <div className="feed-card-actions">
               <Button type="text" aria-label={t('feed.reply')}><MessageCircle size={18} aria-hidden="true" /><span>{t('feed.reply')}</span></Button>
