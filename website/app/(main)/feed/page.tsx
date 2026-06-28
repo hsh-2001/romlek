@@ -2,9 +2,10 @@
 
 import { useState, type CSSProperties } from 'react';
 import { Button, Modal } from 'antd';
-import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles, X } from 'lucide-react';
+import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
+import { MediaPreviewActions } from '@/app/_components/MediaPreviewActions';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelineMedia, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
@@ -108,9 +109,16 @@ export default function FeedPage() {
       >
         {previewMedia ? (
           <div className="studio-preview-content image">
-            <button type="button" className="media-preview-close-button" onClick={() => setPreviewMedia(null)} aria-label={t('media.deleteCancel')}>
-              <X size={24} aria-hidden="true" />
-            </button>
+            <MediaPreviewActions
+              url={previewMedia.url}
+              filename={previewMedia.alt || t('media.preview')}
+              labels={{
+                close: t('media.closePreview'),
+                download: t('media.downloadFile'),
+                open: t('media.openOriginal'),
+              }}
+              onClose={() => setPreviewMedia(null)}
+            />
             <img src={previewMedia.url} alt={previewMedia.alt} />
           </div>
         ) : null}

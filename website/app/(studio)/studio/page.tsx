@@ -11,6 +11,8 @@ import {
   FileSpreadsheet,
   FileText,
   FileType,
+  Download,
+  ExternalLink,
   Pencil,
   Globe2,
   Image as ImageIcon,
@@ -25,6 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import { HlsVideo } from '@/app/_components/HlsVideo';
+import { MediaPreviewActions } from '@/app/_components/MediaPreviewActions';
 import { StudioShell } from '@/app/_components/StudioShell';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
@@ -597,12 +600,19 @@ export default function StudioMediaPage() {
         {previewMedia ? (
           <div className={`studio-preview-content ${previewMedia.kind}`}>
             {previewMedia.kind === 'image' ? (
-              <button type="button" className="media-preview-close-button" onClick={() => setPreviewMedia(null)} aria-label={t('media.deleteCancel')}>
-                <X size={24} aria-hidden="true" />
-              </button>
+              <MediaPreviewActions
+                url={previewMedia.url}
+                filename={previewMedia.alt || t('media.preview')}
+                labels={{
+                  close: t('media.closePreview'),
+                  download: t('media.downloadFile'),
+                  open: t('media.openOriginal'),
+                }}
+                onClose={() => setPreviewMedia(null)}
+              />
             ) : null}
             {previewMedia.kind === 'image' ? <img src={previewMedia.url} alt={previewMedia.alt} /> : null}
-            {previewMedia.kind === 'video' ? <HlsVideo src={previewMedia.url} hlsSrc={previewMedia.hlsUrl} poster={previewMedia.poster} /> : null}
+            {previewMedia.kind === 'video' ? <HlsVideo src={previewMedia.url} hlsSrc={previewMedia.hlsUrl} poster={previewMedia.poster} autoPlay={false} /> : null}
             {previewMedia.kind === 'file' ? (() => {
               const FileIcon = getFileIcon(previewMedia.alt || previewMedia.url);
               return (
@@ -612,9 +622,16 @@ export default function StudioMediaPage() {
                   </span>
                   <strong>{getFileTypeLabel(previewMedia.alt || previewMedia.url)}</strong>
                   <p>{previewMedia.alt}</p>
-                  <a href={previewMedia.url} target="_blank" rel="noopener noreferrer">
-                    {t('media.openFile')}
-                  </a>
+                  <span className="studio-preview-file-actions">
+                    <a href={previewMedia.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink size={16} aria-hidden="true" />
+                      {t('media.openFile')}
+                    </a>
+                    <a href={previewMedia.url} download={previewMedia.alt || t('media.preview')}>
+                      <Download size={16} aria-hidden="true" />
+                      {t('media.downloadFile')}
+                    </a>
+                  </span>
                 </div>
               );
             })() : null}
@@ -826,7 +843,7 @@ export default function StudioMediaPage() {
                         ) : null}
                         <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
                           {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                          {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
+                          {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} autoPlay={false} /> : null}
                           {media.kind === 'file' ? (() => {
                             const FileIcon = getFileIcon(media.alt || media.url);
                             return (

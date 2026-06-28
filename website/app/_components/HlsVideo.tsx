@@ -7,9 +7,10 @@ type HlsVideoProps = {
   src: string;
   hlsSrc?: string;
   poster?: string;
+  autoPlay?: boolean;
 };
 
-export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
+export function HlsVideo({ src, hlsSrc, poster, autoPlay = true }: HlsVideoProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [shouldRenderVideo, setShouldRenderVideo] = useState(false);
@@ -38,6 +39,10 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
     }
 
     const playVideo = () => {
+      if (!autoPlay) {
+        return;
+      }
+
       void video.play().catch(() => {
         // Browsers may still block autoplay in some modes; controls remain visible.
       });
@@ -102,7 +107,7 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
       video.pause();
       hls?.destroy();
     };
-  }, [hlsSrc, shouldRenderVideo, src]);
+  }, [autoPlay, hlsSrc, shouldRenderVideo, src]);
 
   return (
     <div ref={containerRef} className="hls-video-shell">
@@ -110,10 +115,10 @@ export function HlsVideo({ src, hlsSrc, poster }: HlsVideoProps) {
         <video
           ref={videoRef}
           poster={poster}
-          autoPlay={false}
+          autoPlay={autoPlay}
           controls
-          loop
-          muted
+          loop={autoPlay}
+          muted={autoPlay}
           preload="metadata"
           playsInline
         />

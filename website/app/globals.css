@@ -2125,26 +2125,50 @@ html.dark .composer-input.ant-input::placeholder {
   padding: 0;
 }
 
-.media-preview-close-button {
+.media-preview-actions {
   position: fixed;
   top: max(8px, env(safe-area-inset-top));
   right: max(8px, env(safe-area-inset-right));
   z-index: 9999;
   display: inline-flex;
-  width: 46px;
-  height: 46px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.74);
+  padding: 6px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.media-preview-action-button {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: rgba(2, 6, 23, 0.82);
+  background: rgba(15, 23, 42, 0.72);
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 
-.media-preview-close-button:hover {
+.media-preview-action-button:hover {
   background: rgba(2, 6, 23, 0.96);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.media-preview-action-button.primary {
+  background: rgba(255, 255, 255, 0.94);
+  color: #020617;
+}
+
+.media-preview-action-button.primary:hover {
+  background: #ffffff;
+  color: #020617;
 }
 
 .romlek-media-preview-modal.fullscreen .studio-preview-content.image img {
@@ -2212,11 +2236,19 @@ html.dark .composer-input.ant-input::placeholder {
   min-height: 40px;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   border-radius: 999px;
   background: #ffffff;
   color: #0f172a;
   font-weight: 950;
   padding: 0 16px;
+}
+
+.studio-preview-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
 .studio-file-icon {
@@ -3050,11 +3082,15 @@ html.dark .composer-input.ant-input::placeholder {
   padding: 0;
 }
 
-.feed-media-item:hover img,
-.feed-media-item:hover video,
-.feed-media-item:hover .hls-video-shell {
+.feed-media-item.image:hover img {
   filter: saturate(1.04);
   transform: scale(1.035);
+}
+
+.feed-media-item.video:hover video,
+.feed-media-item.video:hover .hls-video-shell {
+  filter: none;
+  transform: none;
 }
 
 .hls-video-shell img,
