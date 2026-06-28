@@ -11,9 +11,9 @@ export default function ExplorePage() {
   const [query, setQuery] = useState('');
   const topics = useMemo(
     () => [
-      { category: t('aside.trending'), title: 'Romlek', count: `1,118 ${t('aside.posts')}` },
-      { category: t('aside.technology'), title: 'Next.js', count: `12.8K ${t('aside.posts')}` },
-      { category: t('aside.social'), title: 'Design systems', count: `824 ${t('aside.posts')}` },
+      { category: t('aside.trending'), title: 'Romlek Travel', count: `1,118 ${t('aside.posts')}` },
+      { category: t('aside.technology'), title: 'Siem Reap', count: `12.8K ${t('aside.posts')}` },
+      { category: t('aside.social'), title: 'Coastal Tours', count: `824 ${t('aside.posts')}` },
     ],
     [t],
   );
@@ -21,17 +21,17 @@ export default function ExplorePage() {
   const latestPosts = [
     {
       id: 1,
-      initials: 'RC',
-      name: 'Romlek Community',
-      username: 'community',
-      body: 'Explore helps you find topics, people, and conversations beyond your home timeline.',
+      initials: 'RT',
+      name: 'Romlek Tours',
+      username: 'romlektours',
+      body: 'Explore helps you find destinations, tour ideas, and trip stories beyond your travel feed.',
     },
     {
       id: 2,
-      initials: 'UI',
-      name: 'UI Notes',
-      username: 'uinotes',
-      body: 'Responsive pages, readable spacing, and theme preferences are now part of the core shell.',
+      initials: 'TG',
+      name: 'Travel Guides',
+      username: 'travelguides',
+      body: 'Save favorite places, collect trip media, and prepare polished destination notes from each journey.',
     },
   ];
 

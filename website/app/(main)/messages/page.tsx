@@ -7,8 +7,8 @@ import { AppShell } from '@/app/_components/AppShell';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 
 const conversations = [
-  { initials: 'NC', name: 'Next Community', username: 'nextjs', time: '8m', preview: 'The shared shell is ready for route-level pages.' },
-  { initials: 'RC', name: 'React Community', username: 'react', time: '1h', preview: 'Form controls are now wrapped with responsive layout rules.' },
+  { initials: 'TG', name: 'Travel Guides', username: 'travelguides', time: '8m', preview: 'The Angkor sunrise route is ready to add to your trip story.' },
+  { initials: 'RT', name: 'Romlek Tours', username: 'romlektours', time: '1h', preview: 'Your beach tour media is grouped and ready for review.' },
 ];
 
 export default function MessagesPage() {

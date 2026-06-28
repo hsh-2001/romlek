@@ -17,9 +17,9 @@ export default function NotificationsPage() {
     [t],
   );
   const notifications = [
-    { id: 1, icon: Heart, title: 'Romlek liked your update', body: '12m' },
-    { id: 2, icon: MessageCircle, title: 'Next Community replied to your post', body: '38m' },
-    { id: 3, icon: UserPlus, title: 'React Community followed you', body: '1h' },
+    { id: 1, icon: Heart, title: 'Romlek saved your trip story', body: '12m' },
+    { id: 2, icon: MessageCircle, title: 'Travel Guides replied to your destination note', body: '38m' },
+    { id: 3, icon: UserPlus, title: 'Romlek Tours followed your travel feed', body: '1h' },
   ];
 
   return (

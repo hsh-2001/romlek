@@ -84,6 +84,7 @@ export default function RegisterPage() {
 
         <div className="login-panel-actions">
           <Link className="login-create-link" href="/login">{t('auth.signIn')}</Link>
+          <Link className="login-feed-link" href="/feed">{t('auth.viewFeed')}</Link>
         </div>
       </Form>
     </main>

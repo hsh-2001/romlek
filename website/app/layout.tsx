@@ -6,7 +6,7 @@ import { AppProviders } from '@/app/_providers/AppProviders';
 
 export const metadata: Metadata = {
   title: 'Romlek',
-  description: 'A digital workspace for visits, media, captions, and social publishing.',
+  description: 'A travel workspace for trips, tours, media, destinations, and story planning.',
 };
 
 type Locale = 'en' | 'km';

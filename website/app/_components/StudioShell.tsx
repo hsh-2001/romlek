@@ -28,7 +28,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
   return (
     <main className="studio-shell">
       <aside className="studio-sidebar">
-        <Link className="studio-brand" href="/studio" aria-label="Romlek Studio">
+        <Link className="studio-brand" href="/studio" aria-label="Romlek Travel Studio">
           <WalletCards size={21} aria-hidden="true" />
         </Link>
 
@@ -66,7 +66,7 @@ export function StudioShell({ active, children }: { active: ActiveRoute; childre
       <section className="studio-workspace">
         <header className="studio-topbar">
           <div>
-            <span className="studio-label">Romlek Studio</span>
+            <span className="studio-label">Romlek Travel Studio</span>
             <strong>{t(pageTitleKeys[active])}</strong>
           </div>
           <div className="studio-topbar-actions">

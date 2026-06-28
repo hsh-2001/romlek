@@ -434,7 +434,9 @@ a {
 
 .login-panel-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 10px;
   padding: 24px 34px 34px;
 }
 
@@ -521,6 +523,27 @@ a {
 .login-create-link:hover {
   background: color-mix(in srgb, var(--color-action) 88%, var(--color-brand));
   color: var(--color-action-contrast);
+}
+
+.login-feed-link {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 900;
+  padding: 0 22px;
+}
+
+.login-feed-link:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 34%, var(--color-border-soft));
+  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-surface));
+  color: var(--color-brand);
 }
 
 .eyebrow {
@@ -2637,48 +2660,47 @@ html.dark .composer-input.ant-input::placeholder {
 
 .feed-hero {
   display: grid;
-  gap: 20px;
+  gap: 6px;
   border-bottom: 1px solid var(--color-border-soft);
   background:
-    radial-gradient(circle at 88% 22%, color-mix(in srgb, var(--color-accent-warm) 24%, transparent), transparent 13rem),
-    linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 16%, transparent), color-mix(in srgb, var(--color-accent) 9%, transparent)),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 9%, transparent), color-mix(in srgb, var(--color-accent) 5%, transparent)),
     var(--color-surface-raised);
-  padding: 26px 24px;
+  padding: 14px 16px 12px;
 }
 
 .feed-hero-copy {
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
 
 .feed-kicker {
   display: inline-flex;
   width: fit-content;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid color-mix(in srgb, var(--color-brand) 24%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-surface) 80%, transparent);
   color: var(--color-brand);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 850;
-  padding: 7px 11px;
+  padding: 5px 9px;
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(12px);
 }
 
 .feed-hero h1 {
   color: var(--color-text);
-  font-size: 38px;
+  font-size: 24px;
   font-weight: 900;
-  line-height: 1.04;
+  line-height: 1.08;
 }
 
 .feed-hero p {
-  max-width: 34rem;
+  max-width: 38rem;
   color: var(--color-muted);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .feed-stats {
@@ -2824,7 +2846,7 @@ html.dark .composer-input.ant-input::placeholder {
     inset 0 0 0 1px rgba(255, 255, 255, 0.24),
     0 8px 18px rgba(15, 118, 110, 0.16);
 }
-
+  
 .feed-author {
   display: grid;
   align-content: start;
@@ -4132,24 +4154,24 @@ html.dark .composer-tool.ant-btn {
   }
 
   .feed-hero {
-    gap: 14px;
-    padding: 18px 16px 14px;
+    gap: 5px;
+    padding: 12px 12px 10px;
   }
 
   .feed-hero h1 {
-    font-size: 30px;
+    font-size: 22px;
     letter-spacing: 0;
   }
 
   .feed-hero p {
     max-width: 24rem;
-    font-size: 14px;
-    line-height: 1.45;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .feed-kicker {
-    font-size: 12px;
-    padding: 5px 9px;
+    font-size: 11px;
+    padding: 4px 8px;
   }
 
   .feed-stats {

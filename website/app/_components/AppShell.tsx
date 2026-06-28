@@ -28,13 +28,13 @@ const getInitials = (value: string) => {
 export function AppShell({ active, children }: { active: ActiveRoute; children: React.ReactNode }) {
   const { t } = usePreferences();
   const trends = [
-    { category: t('aside.trending'), title: 'Next.js', count: `12.8K ${t('aside.posts')}` },
-    { category: t('aside.technology'), title: 'React', count: `4,204 ${t('aside.posts')}` },
-    { category: t('aside.social'), title: 'Romlek', count: `1,118 ${t('aside.posts')}` },
+    { category: t('aside.trending'), title: 'Siem Reap', count: `12.8K ${t('aside.posts')}` },
+    { category: t('aside.technology'), title: 'Island Tours', count: `4,204 ${t('aside.posts')}` },
+    { category: t('aside.social'), title: 'Romlek Travel', count: `1,118 ${t('aside.posts')}` },
   ];
   const suggestions = [
-    { initials: 'NC', name: 'Next Community', username: 'nextjs' },
-    { initials: 'RC', name: 'React Community', username: 'react' },
+    { initials: 'TG', name: 'Travel Guides', username: 'travelguides' },
+    { initials: 'RT', name: 'Romlek Tours', username: 'romlektours' },
   ];
 
   return (
