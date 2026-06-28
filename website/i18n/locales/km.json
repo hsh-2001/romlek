@@ -132,6 +132,7 @@
     "deleteCancel": "បោះបង់",
     "deleteSuccess": "បានលុបមេឌៀ។",
     "deleteError": "លុបមិនបានសម្រេច។ សូមព្យាយាមម្តងទៀត។",
+    "actions": "សកម្មភាពមេឌៀ",
     "editPostingDetails": "កែព័ត៌មានរឿងដំណើរ",
     "savePostingDetails": "រក្សាទុកព័ត៌មាន",
     "postDetailsUpdated": "បានកែព័ត៌មានរឿងដំណើរ។",

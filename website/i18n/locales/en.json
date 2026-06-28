@@ -132,6 +132,7 @@
     "deleteCancel": "Cancel",
     "deleteSuccess": "Media deleted.",
     "deleteError": "Delete failed. Please try again.",
+    "actions": "Media actions",
     "editPostingDetails": "Edit trip story details",
     "savePostingDetails": "Save details",
     "postDetailsUpdated": "Trip story details updated.",

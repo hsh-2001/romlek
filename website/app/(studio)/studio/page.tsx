@@ -1,7 +1,7 @@
 'use client';
 
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal } from 'antd';
+import { Dropdown, Modal } from 'antd';
 import {
   File,
   FileArchive,
@@ -19,6 +19,7 @@ import {
   Lock,
   MapPin,
   MessageSquareText,
+  MoreVertical,
   Presentation,
   Check,
   Trash2,
@@ -868,26 +869,52 @@ export default function StudioMediaPage() {
                           </div>
                           {!isSelectionMode ? (
                             <div className="studio-media-actions">
-                              {media.isPublic ? (
+                              <Dropdown
+                                overlayClassName="studio-media-action-menu"
+                                placement="bottomRight"
+                                trigger={['click']}
+                                menu={{
+                                  items: [
+                                    ...(media.isPublic
+                                      ? [
+                                          {
+                                            key: 'edit',
+                                            icon: <Pencil size={15} aria-hidden="true" />,
+                                            label: t('media.editPostingDetails'),
+                                            disabled: deletingMediaId === '__batch__',
+                                          },
+                                        ]
+                                      : []),
+                                    {
+                                      key: 'delete',
+                                      icon: <Trash2 size={16} aria-hidden="true" />,
+                                      label: t('media.deleteMedia'),
+                                      danger: true,
+                                      disabled: deletingMediaId === media.id || deletingMediaId === '__batch__',
+                                    },
+                                  ],
+                                  onClick: ({ key, domEvent }) => {
+                                    domEvent.stopPropagation();
+
+                                    if (key === 'edit') {
+                                      openPostingDetailsEditor(media);
+                                    }
+
+                                    if (key === 'delete') {
+                                      handleDelete(media);
+                                    }
+                                  },
+                                }}
+                              >
                                 <button
                                   type="button"
-                                  className="studio-media-edit"
-                                  onClick={() => openPostingDetailsEditor(media)}
-                                  disabled={deletingMediaId === '__batch__'}
-                                  aria-label={t('media.editPostingDetails')}
+                                  className="studio-media-more-action"
+                                  aria-label={t('media.actions')}
+                                  onClick={(event) => event.stopPropagation()}
                                 >
-                                  <Pencil size={15} aria-hidden="true" />
+                                  <MoreVertical size={17} aria-hidden="true" />
                                 </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                className="studio-media-delete"
-                                onClick={() => handleDelete(media)}
-                                disabled={deletingMediaId === media.id || deletingMediaId === '__batch__'}
-                                aria-label={t('media.deleteMedia')}
-                              >
-                                <Trash2 size={16} aria-hidden="true" />
-                              </button>
+                              </Dropdown>
                             </div>
                           ) : null}
                         </footer>
