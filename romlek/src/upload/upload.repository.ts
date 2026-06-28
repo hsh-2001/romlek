@@ -168,6 +168,26 @@ export class UploadRepository {
     }
   }
 
+  async markAsPublic(id: string) {
+    try {
+      const result = await this.databaseService.query<CreateUploadDto>(
+        `
+      UPDATE media
+      SET is_public = TRUE,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *
+    `,
+        [id],
+      );
+
+      return result.rows[0] ?? null;
+    } catch (error) {
+      console.error('Error marking upload as public:', error);
+      throw error;
+    }
+  }
+
   async deleteById(id: string) {
     try {
       const result = await this.databaseService.query<CreateUploadDto>(

@@ -94,6 +94,10 @@ export default function StudioMediaPage() {
   const [editLocation, setEditLocation] = useState('');
   const [editCaption, setEditCaption] = useState('');
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [isPostSelectionOpen, setIsPostSelectionOpen] = useState(false);
+  const [selectionLocation, setSelectionLocation] = useState('');
+  const [selectionCaption, setSelectionCaption] = useState('');
+  const [isPostingSelection, setIsPostingSelection] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle');
@@ -122,8 +126,10 @@ export default function StudioMediaPage() {
   const filteredMedia = mediaItems.filter((media) => activeFilter === 'all' || media.kind === activeFilter);
   const filteredMediaIds = filteredMedia.map((media) => media.id);
   const selectedMedia = mediaItems.filter((media) => selectedMediaIds.includes(media.id));
+  const selectedLibraryMedia = selectedMedia.filter((media) => !media.isPublic);
   const selectedVisibleCount = filteredMediaIds.filter((id) => selectedMediaIds.includes(id)).length;
   const hasSelectedMedia = selectedMediaIds.length > 0;
+  const hasSelectedLibraryMedia = selectedLibraryMedia.length > 0;
   const allVisibleSelected = filteredMediaIds.length > 0 && selectedVisibleCount === filteredMediaIds.length;
   const hasPostDetails = postLocation.trim().length > 0 && postCaption.trim().length > 0;
   const canUpload = selectedFiles.length > 0 && Boolean(uploaderId) && !isUploading && (!isPublicUpload || hasPostDetails);
@@ -352,6 +358,50 @@ export default function StudioMediaPage() {
     }
   };
 
+  const openPostSelectionDialog = () => {
+    if (!selectedLibraryMedia.length) {
+      return;
+    }
+
+    setSelectionLocation('');
+    setSelectionCaption('');
+    setUploadError('');
+    setUploadMessage('');
+    setIsPostSelectionOpen(true);
+  };
+
+  const saveSelectedAsPosts = async () => {
+    const location = selectionLocation.trim();
+    const caption = selectionCaption.trim();
+    if (!location || !caption) {
+      setUploadError(t('media.postDetailsRequired'));
+      return;
+    }
+
+    setIsPostingSelection(true);
+    setUploadError('');
+    setUploadMessage('');
+
+    try {
+      await Promise.all(
+        selectedLibraryMedia.map((media) =>
+          api(`/upload/${encodeURIComponent(media.id)}/posting-details`, {
+            method: 'PATCH',
+            body: { location, caption },
+          }),
+        ),
+      );
+      setIsPostSelectionOpen(false);
+      clearMediaSelection();
+      setUploadMessage(t('media.postSelectedSuccess').replace('{count}', String(selectedLibraryMedia.length)));
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : t('media.postDetailsUpdateError'));
+    } finally {
+      setIsPostingSelection(false);
+    }
+  };
+
   return (
     <StudioShell active="media">
       {modalContextHolder}
@@ -383,6 +433,39 @@ export default function StudioMediaPage() {
               placeholder={t('media.captionPlaceholder')}
               rows={3}
               onChange={(event) => setEditCaption(event.target.value)}
+            />
+          </label>
+        </div>
+      </Modal>
+      <Modal
+        className="romlek-edit-posting-modal"
+        title={t('media.postSelectedTitle').replace('{count}', String(selectedLibraryMedia.length))}
+        open={isPostSelectionOpen}
+        okText={t('media.postSelected')}
+        cancelText={t('media.deleteCancel')}
+        confirmLoading={isPostingSelection}
+        onOk={() => void saveSelectedAsPosts()}
+        onCancel={() => setIsPostSelectionOpen(false)}
+      >
+        <p className="studio-post-selection-body">{t('media.postSelectedBody')}</p>
+        <div className="studio-post-details modal-fields">
+          <label>
+            <span><MapPin size={15} aria-hidden="true" /> {t('media.locationLabel')}</span>
+            <input
+              value={selectionLocation}
+              disabled={isPostingSelection}
+              placeholder={t('media.locationPlaceholder')}
+              onChange={(event) => setSelectionLocation(event.target.value)}
+            />
+          </label>
+          <label>
+            <span><MessageSquareText size={15} aria-hidden="true" /> {t('media.captionLabel')}</span>
+            <textarea
+              value={selectionCaption}
+              disabled={isPostingSelection}
+              placeholder={t('media.captionPlaceholder')}
+              rows={3}
+              onChange={(event) => setSelectionCaption(event.target.value)}
             />
           </label>
         </div>
@@ -528,6 +611,10 @@ export default function StudioMediaPage() {
                   <button type="button" className="danger" onClick={handleBatchDelete} disabled={!hasSelectedMedia || deletingMediaId === '__batch__'}>
                     <Trash2 size={15} aria-hidden="true" />
                     {t('media.deleteSelected')}
+                  </button>
+                  <button type="button" className="primary" onClick={openPostSelectionDialog} disabled={!hasSelectedLibraryMedia || deletingMediaId === '__batch__'}>
+                    <Globe2 size={15} aria-hidden="true" />
+                    {t('media.postSelected')}
                   </button>
                 </div>
               </>

@@ -1523,6 +1523,14 @@ html.dark .composer-input.ant-input::placeholder {
   padding-top: 4px;
 }
 
+.studio-post-selection-body {
+  margin-bottom: 12px;
+  color: var(--color-muted-strong);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 .studio-post-details label {
   display: grid;
   gap: 6px;

@@ -207,16 +207,15 @@ export class UploadService {
       throw new NotFoundException('Upload not found');
     }
 
-    if (!parseBoolean(upload.is_public)) {
-      throw new BadRequestException('Posting details can only be edited for media marked for posting');
-    }
-
     const location = details.location?.trim() || '';
     const caption = details.caption?.trim() || '';
     if (!location || !caption) {
       throw new BadRequestException('Location and caption are required');
     }
 
+    const publicUpload = parseBoolean(upload.is_public)
+      ? upload
+      : await this.uploadRepository.markAsPublic(id);
     const postingDetails = await this.uploadRepository.upsertPostingDetails(id, {
       location,
       caption,
@@ -226,7 +225,9 @@ export class UploadService {
       message: 'Posting details updated successfully',
       media: {
         ...upload,
+        ...publicUpload,
         ...postingDetails,
+        is_public: true,
       },
     };
   }
