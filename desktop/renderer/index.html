@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://localhost:* http://127.0.0.1:* https:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Romlek Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="desktop-shell">
+      <aside class="desktop-sidebar">
+        <div class="brand">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Romlek</strong>
+            <small>Desktop</small>
+          </span>
+        </div>
+
+        <nav class="desktop-nav" aria-label="Romlek pages">
+          <button class="nav-item active" type="button" data-path="/feed">Travel Feed</button>
+          <button class="nav-item" type="button" data-path="/explore">Explore</button>
+          <button class="nav-item" type="button" data-path="/studio">Travel Studio</button>
+          <button class="nav-item" type="button" data-path="/messages">Messages</button>
+          <button class="nav-item" type="button" data-path="/notifications">Notifications</button>
+          <button class="nav-item" type="button" data-path="/profile">Profile</button>
+        </nav>
+
+        <form class="server-form" id="server-form">
+          <label for="server-url">Web app URL</label>
+          <input id="server-url" name="server-url" type="url" spellcheck="false" />
+          <button type="submit">Load</button>
+        </form>
+      </aside>
+
+      <section class="desktop-content">
+        <header class="desktop-toolbar">
+          <div>
+            <strong id="page-title">Travel Feed</strong>
+            <small id="page-url">http://localhost:3000/feed</small>
+          </div>
+          <button id="reload-frame" type="button">Reload</button>
+        </header>
+
+        <iframe
+          id="romlek-frame"
+          title="Romlek web app"
+          src="http://localhost:3000/feed"
+          allow="clipboard-read; clipboard-write; fullscreen; geolocation; microphone; camera"
+        ></iframe>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
