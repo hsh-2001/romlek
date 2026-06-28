@@ -30,7 +30,7 @@ import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelineMedia } from '@/app/_hooks/useTimelinePosts';
 
-type MediaFilter = 'all' | TimelineMedia['kind'] | 'album';
+type MediaFilter = 'all' | TimelineMedia['kind'] | 'albums' | `album:${string}`;
 type UploadPhase = 'idle' | 'uploading' | 'processing' | 'complete';
 type UploadResponse = {
   files?: Array<{
@@ -40,13 +40,13 @@ type UploadResponse = {
   }>;
 };
 
-const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file', 'album'];
+const filterOptions: MediaFilter[] = ['all', 'image', 'video', 'file', 'albums'];
 
 const getFilterLabelKey = (filter: MediaFilter) => {
   if (filter === 'image') return 'media.images';
   if (filter === 'video') return 'media.videos';
   if (filter === 'file') return 'media.files';
-  if (filter === 'album') return 'media.albums';
+  if (filter === 'albums') return 'media.albums';
   return 'media.all';
 };
 
@@ -94,6 +94,37 @@ const getUploadedMediaIds = (payload: UploadResponse) => {
     .filter((id): id is string | number => id !== undefined && id !== null);
 };
 
+const getDateKey = (value?: string) => {
+  if (!value) {
+    return 'unknown';
+  }
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return 'unknown';
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
+const formatDateHeading = (value: string, fallback: string) => {
+  if (value === 'unknown') {
+    return fallback;
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  if (!Number.isFinite(date.getTime())) {
+    return fallback;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+};
+
 export default function StudioMediaPage() {
   const { api, user } = useAuth();
   const { t } = usePreferences();
@@ -132,24 +163,55 @@ export default function StudioMediaPage() {
         post.media.map((media) => ({
           ...media,
           postId: post.id,
+          albumId: media.albumId || post.albumId,
+          albumCode: media.albumCode || post.albumCode,
+          albumTitle: media.albumTitle || post.albumTitle,
           albumSize: post.media.length,
           author: post.name,
           time: post.time,
+          createdAt: post.createdAt,
         })),
       ),
     [posts],
   );
+  const albumFilterOptions = useMemo(() => {
+    const albumMap = new Map<string, string>();
+    mediaItems.forEach((media) => {
+      if (media.albumId) {
+        albumMap.set(media.albumId, media.albumCode || `${t('media.album')} #${media.albumId}`);
+      }
+    });
+
+    return Array.from(albumMap, ([id, title]) => ({ id, title }));
+  }, [mediaItems, t]);
   const filteredMedia = mediaItems.filter((media) => {
     if (activeFilter === 'all') {
       return true;
     }
 
-    if (activeFilter === 'album') {
-      return media.albumSize > 1;
+    if (activeFilter === 'albums') {
+      return Boolean(media.albumId);
+    }
+
+    if (activeFilter.startsWith('album:')) {
+      return media.albumId === activeFilter.slice('album:'.length);
     }
 
     return media.kind === activeFilter;
   });
+  const groupedMedia = useMemo(() => {
+    const groups = new Map<string, typeof filteredMedia>();
+    filteredMedia.forEach((media) => {
+      const dateKey = getDateKey(media.createdAt);
+      groups.set(dateKey, [...(groups.get(dateKey) ?? []), media]);
+    });
+
+    return Array.from(groups, ([dateKey, items]) => ({
+      dateKey,
+      title: formatDateHeading(dateKey, t('media.unknownDate')),
+      items,
+    }));
+  }, [filteredMedia, t]);
   const filteredMediaIds = filteredMedia.map((media) => media.id);
   const selectedMedia = mediaItems.filter((media) => selectedMediaIds.includes(media.id));
   const selectedLibraryMedia = selectedMedia.filter((media) => !media.isPublic);
@@ -524,15 +586,21 @@ export default function StudioMediaPage() {
         </div>
       </Modal>
       <Modal
-        className="romlek-media-preview-modal"
+        className={`romlek-media-preview-modal ${previewMedia?.kind === 'image' ? 'fullscreen' : ''}`}
         title={previewMedia?.alt || t('media.preview')}
         open={Boolean(previewMedia)}
         footer={null}
-        width="min(1040px, calc(100vw - 24px))"
+        width={previewMedia?.kind === 'image' ? '100vw' : 'min(1040px, calc(100vw - 24px))'}
+        closable={previewMedia?.kind !== 'image'}
         onCancel={() => setPreviewMedia(null)}
       >
         {previewMedia ? (
           <div className={`studio-preview-content ${previewMedia.kind}`}>
+            {previewMedia.kind === 'image' ? (
+              <button type="button" className="media-preview-close-button" onClick={() => setPreviewMedia(null)} aria-label={t('media.deleteCancel')}>
+                <X size={24} aria-hidden="true" />
+              </button>
+            ) : null}
             {previewMedia.kind === 'image' ? <img src={previewMedia.url} alt={previewMedia.alt} /> : null}
             {previewMedia.kind === 'video' ? <HlsVideo src={previewMedia.url} hlsSrc={previewMedia.hlsUrl} poster={previewMedia.poster} /> : null}
             {previewMedia.kind === 'file' ? (() => {
@@ -678,6 +746,25 @@ export default function StudioMediaPage() {
             </button>
           ))}
         </div>
+        {(activeFilter === 'albums' || activeFilter.startsWith('album:')) && albumFilterOptions.length ? (
+          <div className="studio-media-subfilters" role="tablist" aria-label={t('media.albums')}>
+            {albumFilterOptions.map((album) => {
+              const filter = `album:${album.id}` as const;
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeFilter === filter}
+                  className={activeFilter === filter ? 'active' : ''}
+                  onClick={() => setActiveFilter(filter)}
+                >
+                  {album.title}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         {filteredMedia.length ? (
           <div className={`studio-media-batchbar ${isSelectionMode ? 'active' : 'idle'}`} aria-label={t('media.selectionLabel')}>
@@ -713,76 +800,86 @@ export default function StudioMediaPage() {
         ) : null}
 
         {filteredMedia.length ? (
-          <section className="studio-media-grid" aria-label={t('media.title')}>
-            {filteredMedia.map((media, index) => {
-              const Icon = getMediaIcon(media.kind);
-              const isSelected = selectedMediaIds.includes(media.id);
-              return (
-                <article key={`${media.postId}-${media.id}-${index}`} className={`studio-media-tile ${media.kind} ${isSelectionMode && isSelected ? 'selected' : ''}`}>
-                  {isSelectionMode ? (
-                    <button
-                      type="button"
-                      className="studio-media-select"
-                      onClick={() => toggleMediaSelection(media.id)}
-                      aria-label={t('media.selectMedia').replace('{name}', media.alt)}
-                      aria-pressed={isSelected}
-                    >
-                      {isSelected ? <Check size={15} aria-hidden="true" /> : null}
-                    </button>
-                  ) : null}
-                  <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
-                    {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
-                    {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
-                    {media.kind === 'file' ? (() => {
-                      const FileIcon = getFileIcon(media.alt || media.url);
-                      return (
-                        <span className="studio-file-preview">
-                          <span className="studio-file-icon">
-                            <FileIcon size={42} aria-hidden="true" />
-                          </span>
-                          <strong>{getFileTypeLabel(media.alt || media.url)}</strong>
-                          <span>{media.alt}</span>
-                        </span>
-                      );
-                    })() : null}
-                  </button>
-                  <footer>
-                    <div>
-                      <span><Icon size={15} aria-hidden="true" /> {t(getFilterLabelKey(media.kind))}</span>
-                      <small>
-                        {media.isPublic ? t('media.publicLabel') : t('media.privateLabel')}
-                        {' · '}
-                        {media.time}
-                      </small>
-                    </div>
-                    {!isSelectionMode ? (
-                      <div className="studio-media-actions">
-                        {media.isPublic ? (
+          <section className="studio-media-groups" aria-label={t('media.title')}>
+            {groupedMedia.map((group) => (
+              <section key={group.dateKey} className="studio-media-date-group" aria-label={group.title}>
+                <header className="studio-media-date-header">
+                  <h2>{group.title}</h2>
+                  <span>{t('media.groupItemCount').replace('{count}', String(group.items.length))}</span>
+                </header>
+                <div className="studio-media-grid">
+                  {group.items.map((media, index) => {
+                    const Icon = getMediaIcon(media.kind);
+                    const isSelected = selectedMediaIds.includes(media.id);
+                    return (
+                      <article key={`${media.postId}-${media.id}-${index}`} className={`studio-media-tile ${media.kind} ${isSelectionMode && isSelected ? 'selected' : ''}`}>
+                        {isSelectionMode ? (
                           <button
                             type="button"
-                            className="studio-media-edit"
-                            onClick={() => openPostingDetailsEditor(media)}
-                            disabled={deletingMediaId === '__batch__'}
-                            aria-label={t('media.editPostingDetails')}
+                            className="studio-media-select"
+                            onClick={() => toggleMediaSelection(media.id)}
+                            aria-label={t('media.selectMedia').replace('{name}', media.alt)}
+                            aria-pressed={isSelected}
                           >
-                            <Pencil size={15} aria-hidden="true" />
+                            {isSelected ? <Check size={15} aria-hidden="true" /> : null}
                           </button>
                         ) : null}
-                        <button
-                          type="button"
-                          className="studio-media-delete"
-                          onClick={() => handleDelete(media)}
-                          disabled={deletingMediaId === media.id || deletingMediaId === '__batch__'}
-                          aria-label={t('media.deleteMedia')}
-                        >
-                          <Trash2 size={16} aria-hidden="true" />
+                        <button type="button" className="studio-media-preview" onClick={() => setPreviewMedia(media)} aria-label={t('media.previewMedia').replace('{name}', media.alt)}>
+                          {media.kind === 'image' ? <img src={media.url} alt={media.alt} loading="lazy" decoding="async" /> : null}
+                          {media.kind === 'video' ? <HlsVideo src={media.url} hlsSrc={media.hlsUrl} poster={media.poster} /> : null}
+                          {media.kind === 'file' ? (() => {
+                            const FileIcon = getFileIcon(media.alt || media.url);
+                            return (
+                              <span className="studio-file-preview">
+                                <span className="studio-file-icon">
+                                  <FileIcon size={42} aria-hidden="true" />
+                                </span>
+                                <strong>{getFileTypeLabel(media.alt || media.url)}</strong>
+                                <span>{media.alt}</span>
+                              </span>
+                            );
+                          })() : null}
                         </button>
-                      </div>
-                    ) : null}
-                  </footer>
-                </article>
-              );
-            })}
+                        <footer>
+                          <div>
+                            <span><Icon size={15} aria-hidden="true" /> {t(getFilterLabelKey(media.kind))}</span>
+                            <small>
+                              {media.isPublic ? t('media.publicLabel') : t('media.privateLabel')}
+                              {' · '}
+                              {media.time}
+                            </small>
+                          </div>
+                          {!isSelectionMode ? (
+                            <div className="studio-media-actions">
+                              {media.isPublic ? (
+                                <button
+                                  type="button"
+                                  className="studio-media-edit"
+                                  onClick={() => openPostingDetailsEditor(media)}
+                                  disabled={deletingMediaId === '__batch__'}
+                                  aria-label={t('media.editPostingDetails')}
+                                >
+                                  <Pencil size={15} aria-hidden="true" />
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="studio-media-delete"
+                                onClick={() => handleDelete(media)}
+                                disabled={deletingMediaId === media.id || deletingMediaId === '__batch__'}
+                                aria-label={t('media.deleteMedia')}
+                              >
+                                <Trash2 size={16} aria-hidden="true" />
+                              </button>
+                            </div>
+                          ) : null}
+                        </footer>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </section>
         ) : (
           <section className="studio-media-empty">

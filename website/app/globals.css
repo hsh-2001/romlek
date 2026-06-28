@@ -1228,8 +1228,7 @@ html.dark .composer-input.ant-input::placeholder {
 
 .studio-topbar strong {
   color: var(--color-text);
-  font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .studio-topbar-actions {
@@ -1723,7 +1722,16 @@ html.dark .composer-input.ant-input::placeholder {
   gap: 8px;
 }
 
-.studio-media-filters button {
+.studio-media-subfilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: -4px;
+  padding-left: 12px;
+}
+
+.studio-media-filters button,
+.studio-media-subfilters button {
   border: 1px solid var(--color-border-soft);
   border-radius: 999px;
   background: var(--color-surface);
@@ -1733,7 +1741,14 @@ html.dark .composer-input.ant-input::placeholder {
   padding: 8px 13px;
 }
 
-.studio-media-filters button.active {
+.studio-media-subfilters button {
+  background: color-mix(in srgb, var(--color-surface-soft) 76%, transparent);
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
+.studio-media-filters button.active,
+.studio-media-subfilters button.active {
   border-color: color-mix(in srgb, var(--color-brand) 35%, transparent);
   background: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   color: var(--color-brand);
@@ -1819,6 +1834,37 @@ html.dark .composer-input.ant-input::placeholder {
 .studio-media-batchbar button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.studio-media-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.studio-media-date-group {
+  display: grid;
+  gap: 10px;
+}
+
+.studio-media-date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border-soft);
+  padding-bottom: 8px;
+}
+
+.studio-media-date-header h2 {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.studio-media-date-header span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 850;
 }
 
 .studio-media-grid {
@@ -1952,6 +1998,84 @@ html.dark .composer-input.ant-input::placeholder {
   padding: 12px;
 }
 
+.romlek-media-preview-modal.fullscreen {
+  inset: 0 !important;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-wrap {
+  inset: 0;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-container {
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal {
+  top: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-content {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  border: 0;
+  border-radius: 0;
+  background: #020617;
+  box-shadow: none;
+  padding: 0;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-header {
+  display: none;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-title {
+  color: #f8fafc;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #ffffff;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-close:hover {
+  background: rgba(15, 23, 42, 0.96);
+  color: #ffffff;
+}
+
+.romlek-media-preview-modal.fullscreen .ant-modal-body {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  background: #020617;
+  padding: 0;
+}
+
 .studio-preview-content {
   display: grid;
   min-height: min(520px, 68vh);
@@ -1967,6 +2091,44 @@ html.dark .composer-input.ant-input::placeholder {
     #0f172a;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
   background-size: 16px 16px;
+}
+
+.romlek-media-preview-modal.fullscreen .studio-preview-content.image {
+  position: relative;
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
+  background: #020617;
+  padding: 0;
+}
+
+.media-preview-close-button {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 9999;
+  display: inline-flex;
+  width: 46px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.82);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+
+.media-preview-close-button:hover {
+  background: rgba(2, 6, 23, 0.96);
+}
+
+.romlek-media-preview-modal.fullscreen .studio-preview-content.image img {
+  width: auto;
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
 }
 
 .studio-preview-content.image img,
@@ -2789,8 +2951,6 @@ html.dark .composer-input.ant-input::placeholder {
   display: grid;
   grid-auto-flow: dense;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
 }
 
 .feed-album-count.mobile {
@@ -2803,6 +2963,10 @@ html.dark .composer-input.ant-input::placeholder {
   min-height: 0;
   overflow: hidden;
   background: color-mix(in srgb, var(--color-surface-soft) 76%, #111827);
+}
+
+.feed-media-item.file {
+  background: transparent;
 }
 
 .feed-album.count-1 .feed-media-item {
@@ -2852,6 +3016,16 @@ html.dark .composer-input.ant-input::placeholder {
   object-fit: cover;
   background: #111827;
   transition: transform 220ms ease, filter 220ms ease;
+}
+
+.feed-media-preview-button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  padding: 0;
 }
 
 .feed-media-item:hover img,
@@ -2926,13 +3100,13 @@ html.dark .composer-input.ant-input::placeholder {
   min-height: 100%;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(circle at top, color-mix(in srgb, var(--color-brand) 24%, transparent), transparent 52%),
-    var(--color-surface-soft);
+  border: 0;
+  background: var(--color-surface);
   color: var(--color-brand);
   font-weight: 850;
   padding: 18px;
   text-align: center;
+  text-decoration: none;
 }
 
 .feed-media-more {
@@ -4040,6 +4214,16 @@ html.dark .composer-tool.ant-btn {
   .studio-preview-content.video video,
   .studio-preview-content.video .hls-video-shell {
     max-height: min(520px, 64vh);
+  }
+
+  .romlek-media-preview-modal.fullscreen .studio-preview-content.image {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .romlek-media-preview-modal.fullscreen .studio-preview-content.image img {
+    max-width: 100vw;
+    max-height: 100vh;
   }
 
   .studio-preview-content.video .hls-video-shell {

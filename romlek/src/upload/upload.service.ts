@@ -164,11 +164,12 @@ export class UploadService {
   }
 
   async findAll(
-    options: { publicOnly?: string | boolean; uploadedBy?: string } = {},
+    options: { publicOnly?: string | boolean; uploadedBy?: string; albumId?: string } = {},
   ) {
     const uploads = await this.uploadRepository.findAll({
       publicOnly: parseBoolean(options.publicOnly),
       uploadedBy: this.normalizeUploaderId(options.uploadedBy),
+      albumId: options.albumId?.trim() || undefined,
     });
     return uploads.map((upload) =>
       isVideo(upload.mime_type, upload.original_name || upload.file_name)

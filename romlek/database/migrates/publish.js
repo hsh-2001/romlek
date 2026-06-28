@@ -18,11 +18,12 @@ const migrationOrder = new Map([
   ['users.sql', 1],
   ['trips.sql', 2],
   ['location.sql', 3],
-  ['media.sql', 4],
-  ['media_upload_metadata.sql', 5],
+  ['albums.sql', 4],
+  ['media.sql', 5],
   ['posts.sql', 6],
   ['post_media.sql', 7],
   ['media_posting_details.sql', 8],
+  ['album_backfill.sql', 9],
 ]);
 
 async function runMigrations() {

@@ -1,15 +1,23 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import { Button } from 'antd';
-import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles } from 'lucide-react';
+import { Button, Modal } from 'antd';
+import { Bookmark, ChevronLeft, ChevronRight, Grid2X2, Heart, MapPin, MessageCircle, Sparkles, X } from 'lucide-react';
 import { AppShell, getInitials } from '@/app/_components/AppShell';
 import { HlsVideo } from '@/app/_components/HlsVideo';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
 import { useTimelinePosts, type TimelineMedia, type TimelinePost } from '@/app/_hooks/useTimelinePosts';
 
-function FeedAlbum({ media, labels }: { media: TimelineMedia[]; labels: { album: string; item: string; previous: string; next: string } }) {
+function FeedAlbum({
+  media,
+  labels,
+  onPreviewImage,
+}: {
+  media: TimelineMedia[];
+  labels: { album: string; item: string; previous: string; next: string; preview: string };
+  onPreviewImage: (media: TimelineMedia) => void;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const hasMultiple = media.length > 1;
   const activeMedia = media[activeIndex];
@@ -30,7 +38,11 @@ function FeedAlbum({ media, labels }: { media: TimelineMedia[]; labels: { album:
         <div className="feed-album-track" style={trackStyle}>
           {media.map((item, index) => (
             <figure key={item.id} className={`feed-media-item ${item.kind}`}>
-              {item.kind === 'image' ? <img src={item.url} alt={item.alt} loading="lazy" decoding="async" /> : null}
+              {item.kind === 'image' ? (
+                <button type="button" className="feed-media-preview-button" onClick={() => onPreviewImage(item)} aria-label={labels.preview.replace('{name}', item.alt)}>
+                  <img src={item.url} alt={item.alt} loading="lazy" decoding="async" />
+                </button>
+              ) : null}
               {item.kind === 'video' ? <HlsVideo src={item.url} hlsSrc={item.hlsUrl} poster={item.poster} /> : null}
               {item.kind === 'file' ? (
                 <a className="feed-media-file" href={item.url} target="_blank" rel="noopener noreferrer">
@@ -72,6 +84,7 @@ function FeedAlbum({ media, labels }: { media: TimelineMedia[]; labels: { album:
 export default function FeedPage() {
   const { user } = useAuth();
   const { t } = usePreferences();
+  const [previewMedia, setPreviewMedia] = useState<TimelineMedia | null>(null);
   const apiPosts = useTimelinePosts(0, { publicOnly: true });
   const displayName = user?.name || user?.username || user?.email || 'Welcome';
   const initials = getInitials(displayName);
@@ -84,6 +97,24 @@ export default function FeedPage() {
 
   return (
     <AppShell active="feed">
+      <Modal
+        className="romlek-media-preview-modal fullscreen"
+        title={previewMedia?.alt || t('media.preview')}
+        open={Boolean(previewMedia)}
+        footer={null}
+        width="100vw"
+        closable={false}
+        onCancel={() => setPreviewMedia(null)}
+      >
+        {previewMedia ? (
+          <div className="studio-preview-content image">
+            <button type="button" className="media-preview-close-button" onClick={() => setPreviewMedia(null)} aria-label={t('media.deleteCancel')}>
+              <X size={24} aria-hidden="true" />
+            </button>
+            <img src={previewMedia.url} alt={previewMedia.alt} />
+          </div>
+        ) : null}
+      </Modal>
       <header className="feed-hero">
         <div className="feed-hero-copy">
           <span className="feed-kicker"><Sparkles size={16} aria-hidden="true" /> {t('feed.kicker')}</span>
@@ -116,7 +147,9 @@ export default function FeedPage() {
                   item: t('feed.albumItem'),
                   previous: t('feed.previousMedia'),
                   next: t('feed.nextMedia'),
+                  preview: t('media.previewMedia'),
                 }}
+                onPreviewImage={setPreviewMedia}
               />
             ) : null}
             <div className="feed-card-actions">

@@ -9,8 +9,12 @@ export class PostsController {
 
   @Get()
   @ApiOperation({ summary: 'List posts with attached media' })
-  findAll(@Query('public_only') publicOnly?: string | boolean) {
-    return this.postsService.findAll({ publicOnly });
+  findAll(
+    @Query('public_only') publicOnly?: string | boolean,
+    @Query('uploaded_by') uploadedBy?: string,
+    @Query('album_id') albumId?: string,
+  ) {
+    return this.postsService.findAll({ publicOnly, uploadedBy, albumId });
   }
 
   @Post()

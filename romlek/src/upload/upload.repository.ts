@@ -6,7 +6,7 @@ import { DatabaseService } from '../database/database.service';
 export class UploadRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findAll(options: { publicOnly?: boolean; uploadedBy?: string | null } = {}) {
+  async findAll(options: { publicOnly?: boolean; uploadedBy?: string | null; albumId?: string } = {}) {
     try {
       const whereClauses: string[] = [];
       const params: unknown[] = [];
@@ -18,6 +18,11 @@ export class UploadRepository {
       if (options.uploadedBy) {
         params.push(options.uploadedBy);
         whereClauses.push(`media.uploaded_by = $${params.length}`);
+      }
+
+      if (options.albumId) {
+        params.push(options.albumId);
+        whereClauses.push(`media.album_id = $${params.length}`);
       }
 
       const result = await this.databaseService.query<CreateUploadDto>(
@@ -36,6 +41,9 @@ export class UploadRepository {
         media.duration,
         media.storage_provider,
         media.uploaded_by,
+        media.album_id,
+        album.code AS album_code,
+        album.title AS album_title,
         uploader.username AS uploader_username,
         uploader.username AS uploader_name,
         media.is_public,
@@ -46,6 +54,7 @@ export class UploadRepository {
       FROM media
       LEFT JOIN media_posting_details posting_details ON posting_details.media_id = media.id
       LEFT JOIN users uploader ON uploader.id = media.uploaded_by
+      LEFT JOIN albums album ON album.id = media.album_id
       ${whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''}
       ORDER BY media.created_at DESC, media.id DESC
     `,
@@ -77,6 +86,9 @@ export class UploadRepository {
         media.duration,
         media.storage_provider,
         media.uploaded_by,
+        media.album_id,
+        album.code AS album_code,
+        album.title AS album_title,
         uploader.username AS uploader_username,
         uploader.username AS uploader_name,
         media.is_public,
@@ -87,6 +99,7 @@ export class UploadRepository {
       FROM media
       LEFT JOIN media_posting_details posting_details ON posting_details.media_id = media.id
       LEFT JOIN users uploader ON uploader.id = media.uploaded_by
+      LEFT JOIN albums album ON album.id = media.album_id
       WHERE media.id = $1
       LIMIT 1
     `,

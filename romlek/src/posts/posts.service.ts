@@ -7,9 +7,11 @@ import { parseBoolean } from '../upload/upload.utils';
 export class PostsService {
   constructor(private readonly postsRepository: PostsRepository) {}
 
-  findAll(options: { publicOnly?: string | boolean } = {}) {
+  findAll(options: { publicOnly?: string | boolean; uploadedBy?: string; albumId?: string } = {}) {
     return this.postsRepository.findAll({
       publicOnly: parseBoolean(options.publicOnly),
+      uploadedBy: options.uploadedBy?.trim() || undefined,
+      albumId: options.albumId?.trim() || undefined,
     });
   }
 

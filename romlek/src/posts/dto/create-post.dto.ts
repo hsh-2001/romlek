@@ -7,6 +7,12 @@ export class CreatePostDto {
   @ApiPropertyOptional()
   trip_id?: number | string | null;
 
+  @ApiPropertyOptional()
+  album_id?: number | string | null;
+
+  @ApiPropertyOptional()
+  album_title?: string | null;
+
   @ApiProperty()
   body!: string;
 

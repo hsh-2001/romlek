@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS posts (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     trip_id INTEGER REFERENCES trips(id) ON DELETE SET NULL,
+    album_id BIGINT REFERENCES albums(id) ON DELETE SET NULL,
     body TEXT NOT NULL DEFAULT '',
     location TEXT,
     status VARCHAR(30) NOT NULL DEFAULT 'draft',
@@ -11,8 +12,10 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 ALTER TABLE posts
-    ADD COLUMN IF NOT EXISTS location TEXT;
+    ADD COLUMN IF NOT EXISTS location TEXT,
+    ADD COLUMN IF NOT EXISTS album_id BIGINT REFERENCES albums(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS posts_user_id_idx ON posts(user_id);
 CREATE INDEX IF NOT EXISTS posts_trip_id_idx ON posts(trip_id);
+CREATE INDEX IF NOT EXISTS posts_album_id_idx ON posts(album_id);
 CREATE INDEX IF NOT EXISTS posts_created_at_idx ON posts(created_at DESC);

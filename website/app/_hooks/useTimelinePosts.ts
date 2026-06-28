@@ -12,6 +12,9 @@ export type TimelineMedia = {
   url: string;
   hlsUrl?: string;
   alt: string;
+  albumId?: string;
+  albumCode?: string;
+  albumTitle?: string;
   caption?: string;
   location?: string;
   poster?: string;
@@ -25,8 +28,12 @@ export type TimelinePost = {
   name: string;
   username: string;
   time: string;
+  createdAt?: string;
   body: string;
   location?: string;
+  albumId?: string;
+  albumCode?: string;
+  albumTitle?: string;
   media: TimelineMedia[];
 };
 
@@ -168,6 +175,9 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
   const alt = firstString(media.alt, media.caption, media.original_name, media.originalName, media.file_name, media.fileName) || 'Post media';
   const caption = firstString(media.caption, media.description, media.body, media.content);
   const location = firstString(media.location, media.place, media.store, media.branch, media.address);
+  const albumId = firstString(media.album_id, media.albumId);
+  const albumCode = firstString(media.album_code, media.albumCode);
+  const albumTitle = firstString(media.album_title, media.albumTitle);
   const kind = inferMediaKind(media, initialUrl, key);
   const url = key ? resolveMediaUrl(`/upload/render?key=${encodeURIComponent(key)}`) : initialUrl;
   const rawHlsUrl = firstString(media.hls_url, media.hlsUrl) || (key ? `/upload/hls/playlist?key=${encodeURIComponent(key)}` : '');
@@ -183,6 +193,9 @@ const normalizeMedia = (value: unknown, index: number): TimelineMedia | null => 
     url,
     hlsUrl,
     alt,
+    albumId: albumId || undefined,
+    albumCode: albumCode || undefined,
+    albumTitle: albumTitle || undefined,
     caption: caption || undefined,
     location: location || undefined,
     poster: firstString(media.poster, media.thumbnail_url, media.thumbnailUrl) || undefined,
@@ -221,6 +234,10 @@ const formatRelativeTime = (value: string) => {
 
 const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOptions = {}): TimelinePost => {
   const author = [post.user, post.author, post.created_by, post.createdBy].find(isRecord) ?? {};
+  const album = [post.album].find(isRecord) ?? {};
+  const albumId = firstString(post.album_id, post.albumId, album.id);
+  const albumCode = firstString(post.album_code, post.albumCode, album.code);
+  const albumTitle = firstString(post.album_title, post.albumTitle, album.title);
   const name = firstString(author.name, author.display_name, author.displayName, post.name, post.author_name, post.authorName) || 'Romlek';
   const username = firstString(author.username, post.username, post.author_username, post.authorUsername) || 'romlek';
   const body = firstString(post.body, post.content, post.text, post.caption, post.description);
@@ -238,8 +255,12 @@ const normalizePost = (post: ApiRecord, index: number, options: TimelinePostOpti
     name,
     username,
     time: createdAt ? formatRelativeTime(createdAt) : firstString(post.time) || 'now',
+    createdAt: createdAt || undefined,
     body,
     location: location || undefined,
+    albumId: albumId || undefined,
+    albumCode: albumCode || undefined,
+    albumTitle: albumTitle || undefined,
     media: mediaItems,
   };
 };
@@ -264,6 +285,7 @@ const normalizeUploadAsPost = (media: ApiRecord, index: number, options: Timelin
     name,
     username,
     time: createdAt ? formatRelativeTime(createdAt) : 'now',
+    createdAt: createdAt || undefined,
     body: caption,
     location: location || normalizedMedia.location,
     media: [normalizedMedia],
@@ -277,6 +299,27 @@ export const useTimelinePosts = (refreshKey = 0, options: TimelinePostOptions = 
   useEffect(() => {
     const fetchPosts = async () => {
       if (options.uploadedBy) {
+        const uploadedPosts: TimelinePost[] = [];
+        const uploadedPostMediaIds = new Set<string>();
+
+        try {
+          const postSearchParams = new URLSearchParams();
+          if (options.publicOnly) {
+            postSearchParams.set('public_only', 'true');
+          }
+
+          postSearchParams.set('uploaded_by', options.uploadedBy);
+          const postPayload = await api<unknown>(`/posts?${postSearchParams.toString()}`);
+          uploadedPosts.push(
+            ...getApiItems(postPayload)
+              .map((post, index) => normalizePost(post, index, options))
+              .filter((post) => !options.publicOnly || post.media.length > 0),
+          );
+          uploadedPosts.forEach((post) => post.media.forEach((media) => uploadedPostMediaIds.add(String(media.id))));
+        } catch {
+          // Older APIs may not support uploaded_by on posts yet; uploads still render below.
+        }
+
         try {
           const searchParams = new URLSearchParams();
           if (options.publicOnly) {
@@ -285,9 +328,13 @@ export const useTimelinePosts = (refreshKey = 0, options: TimelinePostOptions = 
 
           searchParams.set('uploaded_by', options.uploadedBy);
           const payload = await api<unknown>(`/upload?${searchParams.toString()}`);
-          setPosts(getApiItems(payload).map((media, index) => normalizeUploadAsPost(media, index, options)).filter((post): post is TimelinePost => Boolean(post)));
+          const standaloneUploads = getApiItems(payload)
+            .map((media, index) => normalizeUploadAsPost(media, index, options))
+            .filter((post): post is TimelinePost => Boolean(post))
+            .filter((post) => !post.media.some((media) => uploadedPostMediaIds.has(String(media.id))));
+          setPosts([...uploadedPosts, ...standaloneUploads]);
         } catch {
-          setPosts([]);
+          setPosts(uploadedPosts);
         }
 
         return;

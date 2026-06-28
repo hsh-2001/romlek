@@ -29,6 +29,12 @@ export class CreateUploadDto {
   @ApiPropertyOptional({ nullable: true })
   uploaded_by?: string | number | null;
   @ApiPropertyOptional({ nullable: true })
+  album_id?: string | number | null;
+  @ApiPropertyOptional({ nullable: true })
+  album_code?: string | null;
+  @ApiPropertyOptional({ nullable: true })
+  album_title?: string | null;
+  @ApiPropertyOptional({ nullable: true })
   uploader_username?: string | null;
   @ApiPropertyOptional({ nullable: true })
   uploader_name?: string | null;

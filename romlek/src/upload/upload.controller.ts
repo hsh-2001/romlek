@@ -28,8 +28,9 @@ export class UploadController {
   findAll(
     @Query('public_only') publicOnly?: string | boolean,
     @Query('uploaded_by') uploadedBy?: string,
+    @Query('album_id') albumId?: string,
   ) {
-    return this.uploadService.findAll({ publicOnly, uploadedBy });
+    return this.uploadService.findAll({ publicOnly, uploadedBy, albumId });
   }
 
   @Delete(':id')
