@@ -3,7 +3,7 @@
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from 'antd';
-import { CalendarDays, CircleDollarSign, ListChecks, Loader2, MapPin, Pencil, Plus, Route, Sparkles, Users, X } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ExternalLink, Image as ImageIcon, ListChecks, Loader2, MapPin, Pencil, Plus, Route, Sparkles, Users, X } from 'lucide-react';
 import { StudioShell } from '@/app/_components/StudioShell';
 import { useAuth } from '@/app/_hooks/useAuth';
 import { usePreferences } from '@/app/_hooks/usePreferences';
@@ -16,6 +16,11 @@ type TripPlanForm = {
   travelStyle: string;
   companions: string;
   budget: string;
+  address: string;
+  googleMapUrl: string;
+  placeDetails: string;
+  previewMediaUrl: string;
+  previewMediaUrls: string[];
   stops: string;
   priorities: string;
   notes: string;
@@ -31,13 +36,31 @@ type TripPlanRow = {
   travel_style: string | null;
   companions: string | null;
   budget: string | null;
+  address: string | null;
+  google_map_url: string | null;
+  place_details: string | null;
+  preview_media_url: string | null;
+  preview_media_urls: string[] | null;
   stops: string | null;
   priorities: string | null;
   notes: string | null;
   status: string | null;
 };
 
+type UploadResponse = {
+  files?: Array<{
+    hlsUrl?: string | null;
+    media?: {
+      file_url?: string | null;
+      fileUrl?: string | null;
+      hls_url?: string | null;
+      hlsUrl?: string | null;
+    };
+  }>;
+};
+
 type PlanningTab = 'editor' | 'plans';
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 
 const emptyPlanForm = (): TripPlanForm => ({
   name: '',
@@ -47,6 +70,11 @@ const emptyPlanForm = (): TripPlanForm => ({
   travelStyle: '',
   companions: '',
   budget: '',
+  address: '',
+  googleMapUrl: '',
+  placeDetails: '',
+  previewMediaUrl: '',
+  previewMediaUrls: [],
   stops: '',
   priorities: '',
   notes: '',
@@ -68,6 +96,49 @@ const formatPlanDate = (value: string | null) => {
   return value.slice(0, 10);
 };
 
+const isVideoPreviewUrl = (value: string | null) => {
+  return Boolean(value && /\.(mp4|webm|ogg|mov|m3u8)(\?.*)?$/i.test(value));
+};
+
+const resolvePreviewUrl = (url: string) => {
+  if (/^(https?:|blob:|data:)/i.test(url)) {
+    return url;
+  }
+
+  const base = new URL(apiBaseUrl);
+
+  if (url.startsWith('/')) {
+    const basePath = base.pathname.replace(/\/$/, '');
+    const path = basePath && !url.startsWith(`${basePath}/`) ? `${basePath}${url}` : url;
+    return `${base.origin}${path}`;
+  }
+
+  return new URL(url, `${apiBaseUrl.replace(/\/$/, '')}/`).toString();
+};
+
+const uniqueUrls = (urls: string[]) => {
+  return Array.from(new Set(urls.map((url) => url.trim()).filter(Boolean)));
+};
+
+const getUploadedPreviewUrls = (payload: UploadResponse) => {
+  return uniqueUrls((payload.files ?? []).map((uploadedFile) => (
+    uploadedFile.media?.hls_url ||
+    uploadedFile.media?.hlsUrl ||
+    uploadedFile.hlsUrl ||
+    uploadedFile.media?.file_url ||
+    uploadedFile.media?.fileUrl ||
+    ''
+  )));
+};
+
+const getPlanPreviewMediaUrls = (form: TripPlanForm) => {
+  return uniqueUrls([...form.previewMediaUrls, form.previewMediaUrl]);
+};
+
+const getRowPreviewMediaUrls = (row: TripPlanRow) => {
+  return uniqueUrls([...(Array.isArray(row.preview_media_urls) ? row.preview_media_urls : []), row.preview_media_url || '']);
+};
+
 const rowToForm = (row: TripPlanRow): TripPlanForm => ({
   name: row.name || '',
   destination: row.destination || '',
@@ -76,6 +147,11 @@ const rowToForm = (row: TripPlanRow): TripPlanForm => ({
   travelStyle: row.travel_style || '',
   companions: row.companions || '',
   budget: row.budget || '',
+  address: row.address || '',
+  googleMapUrl: row.google_map_url || '',
+  placeDetails: row.place_details || '',
+  previewMediaUrl: row.preview_media_url || '',
+  previewMediaUrls: getRowPreviewMediaUrls(row),
   stops: row.stops || '',
   priorities: row.priorities || '',
   notes: row.notes || '',
@@ -91,6 +167,7 @@ export default function PlanningPage() {
   const [editingPlanId, setEditingPlanId] = useState<string | number | null>(null);
   const [activeTab, setActiveTab] = useState<PlanningTab>('plans');
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isUploadingPreview, setIsUploadingPreview] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [plansError, setPlansError] = useState('');
@@ -129,12 +206,17 @@ export default function PlanningPage() {
     setPlan((current) => ({ ...current, [key]: event.target.value }));
   };
 
+  const previewMediaUrls = getPlanPreviewMediaUrls(plan);
   const completedBasics = [
     plan.name.trim(),
     plan.destination.trim(),
     plan.startDate,
     plan.endDate,
     plan.travelStyle,
+    plan.address.trim(),
+    plan.googleMapUrl.trim(),
+    previewMediaUrls.length ? 'preview-media' : '',
+    plan.placeDetails.trim(),
     plan.stops.trim(),
   ].filter(Boolean).length;
 
@@ -143,6 +225,74 @@ export default function PlanningPage() {
     setPlan(emptyPlanForm());
     setError('');
     setMessage('');
+  };
+
+  const addPreviewMediaUrl = () => {
+    const nextUrl = plan.previewMediaUrl.trim();
+    if (!nextUrl) {
+      return;
+    }
+
+    setPlan((current) => ({
+      ...current,
+      previewMediaUrl: '',
+      previewMediaUrls: uniqueUrls([...current.previewMediaUrls, nextUrl]),
+    }));
+  };
+
+  const removePreviewMediaUrl = (url: string) => {
+    setPlan((current) => ({
+      ...current,
+      previewMediaUrl: current.previewMediaUrl.trim() === url ? '' : current.previewMediaUrl,
+      previewMediaUrls: current.previewMediaUrls.filter((previewUrl) => previewUrl !== url),
+    }));
+  };
+
+  const uploadPreviewMedia = async (files: File[]) => {
+    if (!userId) {
+      setError(t('planning.signInRequired'));
+      return;
+    }
+
+    if (files.length === 0) {
+      return;
+    }
+
+    if (files.some((file) => !file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
+      setError(t('planning.previewUploadTypeError'));
+      return;
+    }
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    formData.append('path', 'planning');
+    formData.append('is_public', 'false');
+    formData.append('uploaded_by', userId);
+
+    setIsUploadingPreview(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const payload = await api<UploadResponse>('/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadedUrls = getUploadedPreviewUrls(payload);
+      if (uploadedUrls.length === 0) {
+        throw new Error(t('planning.previewUploadError'));
+      }
+      setPlan((current) => ({
+        ...current,
+        previewMediaUrl: '',
+        previewMediaUrls: uniqueUrls([...current.previewMediaUrls, ...uploadedUrls]),
+      }));
+      setMessage(t('planning.previewUploadSuccess'));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : t('planning.previewUploadError'));
+    } finally {
+      setIsUploadingPreview(false);
+    }
   };
 
   const viewPlan = async (savedPlan: TripPlanRow) => {
@@ -193,6 +343,7 @@ export default function PlanningPage() {
     setMessage('');
 
     try {
+      const mediaUrls = getPlanPreviewMediaUrls(plan);
       const savedPlan = await api<TripPlanRow>(editingPlanId ? `/trip/${editingPlanId}` : '/trip', {
         method: editingPlanId ? 'PATCH' : 'POST',
         body: {
@@ -204,6 +355,11 @@ export default function PlanningPage() {
           travelStyle: plan.travelStyle || null,
           companions: plan.companions.trim() || null,
           budget: plan.budget.trim() || null,
+          address: plan.address.trim() || null,
+          googleMapUrl: plan.googleMapUrl.trim() || null,
+          placeDetails: plan.placeDetails.trim() || null,
+          previewMediaUrl: mediaUrls[0] || null,
+          previewMediaUrls: mediaUrls,
           stops: plan.stops.trim() || null,
           priorities: plan.priorities.trim() || null,
           notes: plan.notes.trim() || null,
@@ -293,6 +449,70 @@ export default function PlanningPage() {
           </div>
 
           <div className="planning-section">
+            <h3>{t('planning.placeTitle')}</h3>
+            <label>
+              <span><MapPin size={15} aria-hidden="true" /> {t('planning.addressLabel')}</span>
+              <input value={plan.address} disabled={isSaving} placeholder={t('planning.addressPlaceholder')} onChange={updatePlan('address')} />
+            </label>
+            <div className="planning-section two-column">
+              <label>
+                <span><ExternalLink size={15} aria-hidden="true" /> {t('planning.googleMapLabel')}</span>
+                <input value={plan.googleMapUrl} disabled={isSaving} placeholder={t('planning.googleMapPlaceholder')} onChange={updatePlan('googleMapUrl')} />
+              </label>
+              <label>
+                <span><ImageIcon size={15} aria-hidden="true" /> {t('planning.previewMediaLabel')}</span>
+                <div className="planning-preview-url-row">
+                  <input value={plan.previewMediaUrl} disabled={isSaving} placeholder={t('planning.previewMediaPlaceholder')} onChange={updatePlan('previewMediaUrl')} />
+                  <Button disabled={isSaving || !plan.previewMediaUrl.trim()} onClick={addPreviewMediaUrl}>
+                    {t('planning.addPreviewMedia')}
+                  </Button>
+                </div>
+              </label>
+            </div>
+            <label className="planning-preview-upload">
+              <span><ImageIcon size={15} aria-hidden="true" /> {t('planning.previewUploadLabel')}</span>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                disabled={isSaving || isUploadingPreview}
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  event.target.value = '';
+                  if (files.length > 0) {
+                    void uploadPreviewMedia(files);
+                  }
+                }}
+              />
+              <small>{isUploadingPreview ? t('planning.previewUploading') : t('planning.previewUploadBody')}</small>
+            </label>
+            {previewMediaUrls.length > 0 ? (
+              <div className="planning-preview-list" aria-label={t('planning.previewSelectedLabel')}>
+                {previewMediaUrls.map((url) => {
+                  const resolvedUrl = resolvePreviewUrl(url);
+
+                  return (
+                    <figure key={url} className="planning-preview-item">
+                      {isVideoPreviewUrl(url) ? (
+                        <video src={resolvedUrl} controls muted playsInline />
+                      ) : (
+                        <img src={resolvedUrl} alt={t('planning.previewSelectedLabel')} />
+                      )}
+                      <button type="button" onClick={() => removePreviewMediaUrl(url)} aria-label={t('planning.removePreviewMedia')}>
+                        <X size={14} aria-hidden="true" />
+                      </button>
+                    </figure>
+                  );
+                })}
+              </div>
+            ) : null}
+            <label>
+              <span><Sparkles size={15} aria-hidden="true" /> {t('planning.placeDetailsLabel')}</span>
+              <textarea value={plan.placeDetails} disabled={isSaving} placeholder={t('planning.placeDetailsPlaceholder')} rows={3} onChange={updatePlan('placeDetails')} />
+            </label>
+          </div>
+
+          <div className="planning-section">
             <h3>{t('planning.routeTitle')}</h3>
             <label>
               <span><Route size={15} aria-hidden="true" /> {t('planning.stopsLabel')}</span>
@@ -340,7 +560,7 @@ export default function PlanningPage() {
             </div>
           </dl>
           <div className="planning-readiness">
-            <strong>{completedBasics}/6</strong>
+            <strong>{completedBasics}/10</strong>
             <span>{t('planning.readinessLabel')}</span>
           </div>
         </aside>
@@ -367,6 +587,7 @@ export default function PlanningPage() {
               const endDate = formatPlanDate(savedPlan.end_date);
               const isSelected = selectedPlan ? String(selectedPlan.id) === String(savedPlan.id) : false;
               const displayedPlan = isSelected && selectedPlan ? selectedPlan : savedPlan;
+              const displayedPreviewUrls = getRowPreviewMediaUrls(displayedPlan);
 
               return (
                 <article key={savedPlan.id} className={`planning-saved-card ${isSelected ? 'active' : ''}`}>
@@ -378,10 +599,27 @@ export default function PlanningPage() {
                   </button>
                   {isSelected ? (
                     <div className="planning-saved-card-details">
+                      {displayedPreviewUrls.length > 0 ? (
+                        <div className="planning-place-preview-grid">
+                          {displayedPreviewUrls.map((url) => (
+                            <div key={url} className="planning-place-preview">
+                              {isVideoPreviewUrl(url) ? (
+                                <video src={resolvePreviewUrl(url)} controls muted playsInline />
+                              ) : (
+                                <img src={resolvePreviewUrl(url)} alt={displayedPlan.name || displayedPlan.destination || t('planning.summaryUntitled')} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                       <dl className="planning-details-grid">
                         <div>
                           <dt>{t('planning.destinationLabel')}</dt>
                           <dd>{displayedPlan.destination || t('planning.summaryEmpty')}</dd>
+                        </div>
+                        <div>
+                          <dt>{t('planning.addressLabel')}</dt>
+                          <dd>{displayedPlan.address || t('planning.summaryEmpty')}</dd>
                         </div>
                         <div>
                           <dt>{t('planning.travelStyleLabel')}</dt>
@@ -395,8 +633,20 @@ export default function PlanningPage() {
                           <dt>{t('planning.budgetLabel')}</dt>
                           <dd>{displayedPlan.budget || t('planning.summaryEmpty')}</dd>
                         </div>
+                        <div>
+                          <dt>{t('planning.googleMapLabel')}</dt>
+                          <dd>
+                            {displayedPlan.google_map_url ? (
+                              <a href={displayedPlan.google_map_url} target="_blank" rel="noreferrer">{t('planning.openMap')}</a>
+                            ) : t('planning.summaryEmpty')}
+                          </dd>
+                        </div>
                       </dl>
                       <div className="planning-details-notes">
+                        <section>
+                          <h3>{t('planning.placeDetailsLabel')}</h3>
+                          <p>{displayedPlan.place_details || t('planning.summaryEmpty')}</p>
+                        </section>
                         <section>
                           <h3>{t('planning.stopsLabel')}</h3>
                           <p>{displayedPlan.stops || t('planning.summaryEmpty')}</p>

@@ -16,6 +16,16 @@ export class UpdateTripDtoClass {
   @ApiProperty({ required: false })
   budget?: string | null;
   @ApiProperty({ required: false })
+  address?: string | null;
+  @ApiProperty({ required: false })
+  googleMapUrl?: string | null;
+  @ApiProperty({ required: false })
+  placeDetails?: string | null;
+  @ApiProperty({ required: false })
+  previewMediaUrl?: string | null;
+  @ApiProperty({ required: false, type: [String] })
+  previewMediaUrls?: string[] | null;
+  @ApiProperty({ required: false })
   stops?: string | null;
   @ApiProperty({ required: false })
   priorities?: string | null;

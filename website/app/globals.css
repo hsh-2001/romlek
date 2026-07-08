@@ -3723,9 +3723,71 @@ a.studio-media-preview {
   padding: 10px;
 }
 
+.planning-form input[type="file"] {
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .planning-form textarea {
   min-height: 92px;
   resize: vertical;
+}
+
+.planning-preview-upload small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.planning-preview-url-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.planning-preview-url-row .ant-btn {
+  min-height: 40px;
+  border-radius: 8px;
+  font-weight: 950;
+}
+
+.planning-preview-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.planning-preview-item {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.planning-preview-item img,
+.planning-preview-item video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.planning-preview-item button {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-border-soft) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-text);
+  cursor: pointer;
 }
 
 .planning-form input:focus,
@@ -3871,6 +3933,16 @@ a.studio-media-preview {
   font-weight: 800;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.planning-details-grid a {
+  color: var(--color-brand);
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.planning-details-grid a:hover {
+  text-decoration: underline;
 }
 
 .planning-details-notes {
@@ -4024,6 +4096,29 @@ a.studio-media-preview {
   border-top: 1px solid var(--color-border-soft);
   background: color-mix(in srgb, var(--color-surface-subtle) 58%, var(--color-surface));
   padding: 14px;
+}
+
+.planning-place-preview {
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.planning-place-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.planning-place-preview img,
+.planning-place-preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 360px;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
 }
 
 .planning-saved-card dd {
@@ -4976,7 +5071,16 @@ html.dark .composer-tool.ant-btn {
   .planning-section.two-column,
   .planning-details-grid,
   .planning-details-notes,
-  .planning-date-grid {
+  .planning-date-grid,
+  .planning-preview-url-row {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-preview-url-row .ant-btn {
+    width: 100%;
+  }
+
+  .planning-place-preview-grid {
     grid-template-columns: 1fr;
   }
 
